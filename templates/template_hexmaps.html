@@ -1,0 +1,199 @@
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hex Map Editor</title>
+  <link rel="stylesheet" href="/static/hexmaps.css">
+</head>
+<body>
+  <div id="toolbar">
+    <div id="colorPalette">
+      <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
+      <div class="swatch" style="background:#000000" data-color="#000000"></div>
+      <!-- blues -->
+      <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
+      <div class="swatch" style="background:#535272" data-color="#535272"></div>
+      <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
+      <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
+      <!-- greens -->
+      <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
+      <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
+      <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
+      <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
+      <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
+      <div class="swatch" style="background:#b4bd50" data-color="#b4bd50"></div>
+      <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
+      <!-- browns oranges -->
+      <div class="swatch" style="background:#943636" data-color="#943636"></div>
+      <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
+      <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
+      <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
+      <div class="swatch" style="background:#efb158" data-color="#efb158"></div>
+      <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
+      <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
+    </div>
+    <div id="symbolGrid">
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🌲">🌲</div>
+        <div class="symbol-btn btn" data-text="🌳">🌳</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🌵">🌵</div>
+        <div class="symbol-btn btn" data-text="🏜">🏜</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🏔">🏔</div>
+        <div class="symbol-btn btn" data-text="🗻">🗻</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🌋">🌋</div>
+        <div class="symbol-btn btn" data-text="🌊">🌊</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🪵">🪵</div>
+        <div class="symbol-btn btn" data-text="🌾">🌾</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🏯">🏯</div>
+        <div class="symbol-btn btn" data-text="🏰">🏰</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🔥">🔥</div>
+        <div class="symbol-btn btn" data-text="☄️">☄️</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🏝">🏝</div>
+        <div class="symbol-btn btn" data-text="🗿">🗿</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🏠">🏠</div>
+        <div class="symbol-btn btn" data-text="🏚">🏚</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🏯">🏯</div>
+        <div class="symbol-btn btn" data-text="🏰">🏰</div>
+      </div>
+      <div class="symbol-grid-row">
+        <div class="symbol-btn btn" data-text="🛖">🛖</div>
+      </div>
+      <!-- <div class="symbol-btn btn" data-symbol="barren"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="dune"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="mountain"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="castle"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="house"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="pond"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="lily"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="marsh"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="trees"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="conifer"></div> -->
+      <!-- <div class="symbol-btn btn" data-symbol="water"></div> -->
+    </div>
+    <div id="controlsGrid">
+      <button id="rotateAxesBtn" class="btn" title="Flip axes">↻</button>
+      <button id="enableZoomingBtn" class="btn" title="Enable zooming (might be buggy)">⛶</button>
+      <button id="pathModeBtn" class="btn" title="Enable path mode">➶</button>
+    </div>
+  </div>
+  <svg id="hexmap">
+    <defs>
+      <pattern id="barren2x1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <rect width="100%" height="100%" fill="orange" />
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/barren2x1.png" />
+      </pattern>
+      <pattern id="barren2x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/barren2x.png" />
+      </pattern>
+      <pattern id="barren3x1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/barren3x1.png" />
+      </pattern>
+      <pattern id="barren3x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/barren3x.png" />
+      </pattern>
+      <pattern id="castle" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/castle.png" />
+      </pattern>
+      <pattern id="cattail1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/cattail1.png" />
+      </pattern>
+      <pattern id="cattail2" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/cattail2.png" />
+      </pattern>
+      <pattern id="cattail3" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/cattail3.png" />
+      </pattern>
+      <pattern id="cattail4" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/cattail4.png" />
+      </pattern>
+      <pattern id="cattail5" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/cattail5.png" />
+      </pattern>
+      <pattern id="cattail6" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/cattail6.png" />
+      </pattern>
+      <pattern id="conifer1x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/conifer1x.png" />
+      </pattern>
+      <pattern id="conifer2x1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/conifer2x1.png" />
+      </pattern>
+      <pattern id="conifer2x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/conifer2x.png" />
+      </pattern>
+      <pattern id="conifer4x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/conifer4x.png" />
+      </pattern>
+      <pattern id="dune1x1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/dune1x1.png" />
+      </pattern>
+      <pattern id="dune1x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/dune1x.png" />
+      </pattern>
+      <pattern id="dune2x1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/dune2x1.png" />
+      </pattern>
+      <pattern id="dune2x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/dune2x.png" />
+      </pattern>
+      <pattern id="house" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/house.png" />
+      </pattern>
+      <pattern id="lily3x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/lily3x.png" />
+      </pattern>
+      <pattern id="lily4x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/lily4x.png" />
+      </pattern>
+      <pattern id="mountainbig" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/mountainbig.png" />
+      </pattern>
+      <pattern id="mountainmedium2" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/mountainmedium2.png" />
+      </pattern>
+      <pattern id="mountainmedium3" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/mountainmedium3.png" />
+      </pattern>
+      <pattern id="mountainmedium" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/mountainmedium.png" />
+      </pattern>
+      <pattern id="pond" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <rect width="100%" height="100%" fill="#3d5a40" />
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/pond.png" />
+      </pattern>
+      <pattern id="trees2x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/trees2x.png" />
+      </pattern>
+      <pattern id="trees3x1" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/trees3x1.png" />
+      </pattern>
+      <pattern id="trees3x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/trees3x.png" />
+      </pattern>
+      <pattern id="trees4x" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/trees4x.png" />
+      </pattern>
+      <pattern id="water" height="100%" width="100%" patternContentUnits="objectBoundingBox">
+        <image height="1" width="1" preserveAspectRatio="none" xlink:href="{{ static_url }}/images/hexmap/water.png" />
+      </pattern>
+    </defs>
+  </svg>
+</body>
+<script src="/static/hexmaps.js"></script>
