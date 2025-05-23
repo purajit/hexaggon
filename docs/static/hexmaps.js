@@ -1,8 +1,10 @@
-const SVG = document.getElementById('hexmap');
-const SWATCHES = document.querySelectorAll('.swatch');
-const SYMBOL_BUTTONS = document.querySelectorAll('.symbol-btn')
-const ENABLE_ZOOMING_BTN = document.getElementById('enableZoomingBtn');
-const PATH_MODE_BTN = document.getElementById('pathModeBtn');
+const SVG = document.getElementById("hexmap");
+const SWATCHES = document.querySelectorAll(".swatch");
+const MODE_PICKER_BUTTONS = document.querySelectorAll(".mode-picker-btn");
+const MODE_CONTROLS = document.querySelectorAll(".mode-control");
+const OBJECT_BUTTONS = document.querySelectorAll(".object-btn");
+const PATH_TIP_SYMBOL_BUTTONS = document.querySelectorAll(".path-tip-symbol-btn");
+const PATH_MODE_BTN = document.getElementById("pathModeBtn");
 const TILESETS = {
   barren: ["barren2x", "barren2x1", "barren3x", "barren3x1"],
   castle: ["castle"],
@@ -22,104 +24,144 @@ const HEX_RADIUS = 35;
 const HEX_COLS = Math.ceil(window.innerWidth / (HEX_RADIUS * 1.5));
 const HEX_ROWS = Math.ceil(window.innerHeight / (Math.sqrt(3) * HEX_RADIUS));
 const HEXES = {};
-const SYMBOLS_ON_HEXES = {};
+const OBJECTS_ON_HEXES = {};
+
+const Modes = {
+  NONE: "none",
+  BRUSH: "brush",
+  OBJECT: "object",
+  PATH: "path",
+  ERASER: "eraser",
+};
+
+let currentMode = Modes.BRUSH;
+let previousMode = Modes.BRUSH;
 
 // whether the use vertical-oriented axes (hexagon pointy up and down)
 let useVerticalAxes = false;
-let inPathMode = false;
-let zoomingEnabled = false;
+let zoomingEnabled = true;
 
 // initial defaults
 let foregroundColor = "#c4b9a5";
+// only changed when double-clicking a color
+let defaultForegroundColor = "#c4b9a5";
 let backgroundColor = "#000000";
 
 // painting modes and metadata
 let painting = false;
 let paintingBackground = false;
-let currentSymbol = "";
-let currentSymbolText = "";
+let currentObject = null;
 
 // path mode and metadata
-let isSpaceDown = false;
 let lastHex = null;
-let pathTipSymbol = null;
+let currentPathTipSymbol = "⚓";
+let pathTip = null;
 
-document.getElementById('rotateAxesBtn').addEventListener("click", (e) => {
+document.getElementById("rotateAxesBtn").addEventListener("click", (e) => {
   useVerticalAxes = !useVerticalAxes;
   init();
 });
 
 
-ENABLE_ZOOMING_BTN.addEventListener("click", (e) => {
-  ENABLE_ZOOMING_BTN.classList.toggle("selected");
-  zoomingEnabled = !zoomingEnabled;
-});
-
-PATH_MODE_BTN.addEventListener("click", (e) => {
-  PATH_MODE_BTN.classList.toggle("selected");
-  inPathMode = !inPathMode;
+MODE_PICKER_BUTTONS.forEach(modePicker => {
+  modePicker.addEventListener("click", (e) => {
+    console.log(modePicker.dataset.mode);
+    switchToMode(Modes[modePicker.dataset.mode]);
+  });
 });
 
 SWATCHES.forEach(swatch => {
   // left click - set as foreground color
-  swatch.addEventListener('click', (e) => {
+  swatch.addEventListener("click", (e) => {
     foregroundColor = swatch.dataset.color;
-    SWATCHES.forEach(b => b.classList.remove('fgselected'));
-    swatch.classList.add('fgselected');
+    SWATCHES.forEach(b => b.classList.remove("fgselected"));
+    swatch.classList.add("fgselected");
   });
   // right click - set as background color
-  swatch.addEventListener('contextmenu', (e) => {
+  swatch.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     backgroundColor = swatch.dataset.color;
-    SWATCHES.forEach(b => b.classList.remove('bgselected'));
-    swatch.classList.add('bgselected');
+    SWATCHES.forEach(b => b.classList.remove("bgselected"));
+    swatch.classList.add("bgselected");
   });
   // double click - fill entire page
-  swatch.addEventListener('dblclick', () => {
+  swatch.addEventListener("dblclick", () => {
     Object.values(HEXES).forEach(hexEntry => {
       const {hex} = hexEntry;
+      defaultForegroundColor = swatch.dataset.color;
       hex.setAttribute("fill", swatch.dataset.color);
     });
   });
 });
 
-SYMBOL_BUTTONS.forEach(btn => {
+OBJECT_BUTTONS.forEach(btn => {
   // const bgimg = choose(TILESETS[btn.dataset.symbol]);
   // btn.style.backgroundImage = `url({{ static_url }}/images/hexmap/${bgimg}.png)`;
-  // selecting/unselecting a symbol/empji/stamp
-  btn.addEventListener('click', () => {
-    if (btn.classList.contains('selected')) {
-      currentSymbol = "";
-      currentSymbolText = "";
-      btn.classList.remove('selected');
+  // selecting/unselecting a object/empji/stamp
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("selected")) {
+      currentObject = null;
+      btn.classList.remove("selected");
       return;
     }
-    SYMBOL_BUTTONS.forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    currentSymbol = btn.dataset.symbol;
-    currentSymbolText = btn.dataset.text;
+    OBJECT_BUTTONS.forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    currentObject = btn;
   });
 });
 
-document.addEventListener('keydown', e => {
-  isSpaceDown = (e.code === 'Space');
+PATH_TIP_SYMBOL_BUTTONS.forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("selected")) {
+      return;
+    }
+    PATH_TIP_SYMBOL_BUTTONS.forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    currentPathTipSymbol = btn.dataset.text;
+    if (pathTip) {
+      pathTip.textContent = currentPathTipSymbol;
+    }
+  });
 });
 
-document.addEventListener('keyup', e => {
-  // if code is not Space, don't do anything! This isn't the same
-  // as `isSpaceDown = false(e.code !== 'Space')`
-  if (e.code === 'Space') isSpaceDown = false;
-});
-
-SVG.addEventListener('mouseup', () => {
+SVG.addEventListener("mouseup", () => {
   painting = false;
   lastHex = null;
 });
 
-SVG.addEventListener('contextmenu', e => e.preventDefault());
+SVG.addEventListener("contextmenu", e => e.preventDefault());
 SVG.addEventListener("wheel", zoom);
 
-// zooming and panning - this works, it's just not a great experience yet
+document.addEventListener("keydown", e => {
+  switch(e.code) {
+  case "KeyE":
+    switchToMode(Modes.ERASER);
+    break;
+  case "KeyB":
+    switchToMode(Modes.BRUSH);
+    break;
+  case "Digit2":
+  case "KeyO":
+    switchToMode(Modes.OBJECT);
+    break;
+  case "Digit3":
+  case "KeyP":
+    switchToMode(Modes.PATH);
+    break;
+  }
+})
+
+function switchToMode(mode) {
+  currentMode = mode;
+  MODE_CONTROLS.forEach(mc => {
+    if (mc.dataset.mode != currentMode) {
+      mc.classList.add("hidden");
+    } else {
+      mc.classList.remove("hidden");
+    }
+  })
+}
+
 function zoom(e) {
   if (!zoomingEnabled) {
     return;
@@ -132,9 +174,9 @@ function zoom(e) {
   // mouse point within SVG space. Don't ask, I just copied-pasted
   const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(SVG.getScreenCTM().inverse());
 
-  const viewBox = SVG.getAttribute('viewBox') || `0 0 ${window.innerWidth} ${window.innerHeight}`;
+  const viewBox = SVG.getAttribute("viewBox") || `0 0 ${window.innerWidth} ${window.innerHeight}`;
 
-  const [x, y, width, height] = viewBox.split(' ').map(Number);
+  const [x, y, width, height] = viewBox.split(" ").map(Number);
 
   // new viewbox
   const [width2, height2] = [width + width * scale, height + height * scale];
@@ -142,7 +184,7 @@ function zoom(e) {
   const [xPropW, yPropH] = [(pt.x - x) / width, (pt.y - y) / height];
   const x2 = pt.x - xPropW * width2;
   const y2 = pt.y - yPropH * height2;
-  SVG.setAttribute('viewBox', `${x2} ${y2} ${width2} ${height2}`);
+  SVG.setAttribute("viewBox", `${x2} ${y2} ${width2} ${height2}`);
 }
 
 function hexIndexToPixel(c, r) {
@@ -194,25 +236,36 @@ function drawHex(c, r) {
     }
   });
 
-  const hexSymbol = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  hexSymbol.setAttribute("x", x);
-  hexSymbol.setAttribute("y", y);
-  hexSymbol.classList.add("hex-symbol");
+  const hexObject = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  hexObject.setAttribute("x", x);
+  hexObject.setAttribute("y", y);
+  hexObject.classList.add("hex-object");
 
   HEXES[`${c},${r}`] = {hex, x, y};
-  SYMBOLS_ON_HEXES[`${c},${r}`] = hexSymbol;
+  OBJECTS_ON_HEXES[`${c},${r}`] = hexObject;
 
   SVG.appendChild(hex);
-  SVG.appendChild(hexSymbol);
+  SVG.appendChild(hexObject);
 }
 
 function handleHexInteraction(c, r) {
   const {hex, x, y} = HEXES[`${c},${r}`];
-  const usingPathMode = inPathMode || isSpaceDown;
-  if (usingPathMode) {
-    if (lastHex && lastHex.c === c && lastHex.r === r)
+  if (currentMode == Modes.BRUSH) {
+    const fillColor = paintingBackground ? backgroundColor : foregroundColor;
+    hex.setAttribute("fill", fillColor);
+  } else if (currentMode == Modes.OBJECT) {
+    if (currentObject == null) {
       return;
+    }
+    OBJECTS_ON_HEXES[`${c},${r}`].textContent = currentObject.dataset.text;
+  } else if (currentMode == Modes.ERASER) {
+    OBJECTS_ON_HEXES[`${c},${r}`].textContent = "";
+    hex.setAttribute("fill", defaultForegroundColor);
+  } else if (currentMode == Modes.PATH) {
     if (lastHex) {
+      console.log(pathTip.getAttribute("c"), pathTip.getAttribute("r"), c, r);
+      if (lastHex.c === c && lastHex.r === r)
+        return;
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
       line.setAttribute("x1", lastHex.x);
       line.setAttribute("y1", lastHex.y);
@@ -221,6 +274,10 @@ function handleHexInteraction(c, r) {
       line.classList.add("path-line");
       SVG.appendChild(line);
     } else {
+      // if there's an active path, we should only allow continuing the path from there
+      // TODO: support multiple paths
+      if (pathTip != null && (c != pathTip.getAttribute("c") || r != pathTip.getAttribute("r")))
+        return;
       const marker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       marker.setAttribute("cx", x);
       marker.setAttribute("cy", y);
@@ -228,45 +285,29 @@ function handleHexInteraction(c, r) {
       marker.classList.add("path-marker");
       SVG.appendChild(marker);
     }
-    if (pathTipSymbol) SVG.removeChild(pathTipSymbol);
-    pathTipSymbol = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    pathTipSymbol.setAttribute("x", x);
-    pathTipSymbol.setAttribute("y", y);
-    pathTipSymbol.textContent = "⚓";
-    pathTipSymbol.classList.add("path-tip-symbol");
+    if (pathTip) SVG.removeChild(pathTip);
+    pathTip = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    pathTip.setAttribute("x", x);
+    pathTip.setAttribute("y", y);
+    pathTip.setAttribute("c", c);
+    pathTip.setAttribute("r", r);
+    pathTip.textContent = currentPathTipSymbol;
+    pathTip.classList.add("path-tip-symbol");
     lastHex = {c, r, x, y};
-    SVG.appendChild(pathTipSymbol);
-  } else {
-    const fillColor = paintingBackground ? backgroundColor : foregroundColor;
-    hex.setAttribute("fill", fillColor);
-    if (currentSymbolText != "") {
-      SYMBOLS_ON_HEXES[`${c},${r}`].textContent = currentSymbolText;
-    }
-    if (currentSymbol !== "") {
-      // const subSymbol = choose(TILESETS[currentSymbol]);
-      // hex.setAttribute("fill", `url(#${subSymbol})`);
-      // const symbolimg = document.createElementNS("http://www.w3.org/2000/svg", "image");
-      // symbolimg.setAttribute("x", x);
-      // symbolimg.setAttribute("y", y);
-      // symbolimg.setAttribute("width", 100);
-      // symbolimg.setAttribute("height", 100);
-      // symbolimg.setAttribute("xlink:href", `{{ static_url }}/images/hexmap/${subSymbol}.png`)
-
-      // // SVG.appendChild(symbolimg);
-      // hex.appendChild(symbolimg);
-    }
+    SVG.appendChild(pathTip);
   }
 }
 
 function init() {
   for (let h in HEXES) delete HEXES[h];
-  Array.prototype.slice.call(document.getElementsByTagName('polygon')).forEach(e => e.remove());
+  Array.prototype.slice.call(document.getElementsByTagName("polygon")).forEach(e => e.remove());
 
   for (let c = -0.5*HEX_COLS; c < 1.5*HEX_COLS; c++) {
     for (let r = -0.5*HEX_ROWS; r < 1.5*HEX_ROWS; r++) {
       drawHex(c, r);
     }
   }
+  switchToMode(Modes.BRUSH);
   // smol beans grid for inspection ease
   // for (let c = 10; c < 12; c++) {
   //   for (let r = 5; r < 7; r++) {

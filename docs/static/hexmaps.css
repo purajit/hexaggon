@@ -4,38 +4,42 @@ html, body {
 }
 
 /* Commons */
+.hidden {
+    display: none !important;
+}
+
 .btn {
     width: 50px;
     height: 50px;
     background-color: white;
-    border: 1px solid #ccc;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 30px;
+    border: none;
 }
 .btn.selected {
-    border: 1px solid black;
+    background: #91b985;
 }
 
 /* The floating toolbar on the top-left */
 #toolbar {
     display: flex;
-    gap: 1rem;
     padding: 1rem;
     position: absolute;
 }
 
-/* The color palette picker */
-#colorPalette {
+#modePicker {
     display: flex;
-    gap: 0.5rem;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.5);
-    padding: 10px;
     border-radius: 10px 0px 0px 10px;
+    overflow: hidden;
+    height: fit-content;
+    border-right: 1px solid #ccc;
 }
+
+/* The color palette picker */
 .swatch {
     width: 30px;
     height: 30px;
@@ -50,33 +54,23 @@ html, body {
     border-style: dotted;
 }
 
-/* The symbol/stamp/emoji picker */
-#symbolGrid {
+/* The object/stamp/emoji picker */
+.mode-control {
     display: flex;
     flex-direction: column;
+    width: fit-content;
     gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255);
     padding: 10px;
 }
-.symbol-grid-row {
+.object-grid-row {
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
 }
-.symbol-btn {
+.object-btn {
     background-size: contain;
     background-repeat: no-repeat;
-}
-
-/* Control panel */
-
-#controlsGrid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.5);
-    padding: 10px;
-    height: fit-content;
 }
 
 /* The whole entire hex map */
@@ -93,8 +87,8 @@ html, body {
     cursor: pointer;
     stroke-width: 5px;
 }
-/* the symbol/emoji/stamp on top of a hex */
-.hex-symbol {
+/* the object/emoji/stamp on top of a hex */
+.hex-object {
     pointer-events: none;
     text-anchor: middle;
     dominant-baseline: central;

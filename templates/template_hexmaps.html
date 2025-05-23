@@ -6,91 +6,105 @@
 </head>
 <body>
   <div id="toolbar">
-    <div id="colorPalette">
-      <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
-      <div class="swatch" style="background:#000000" data-color="#000000"></div>
-      <!-- blues -->
-      <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
-      <div class="swatch" style="background:#535272" data-color="#535272"></div>
-      <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
-      <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
-      <!-- greens -->
-      <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
-      <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
-      <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
-      <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
-      <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
-      <div class="swatch" style="background:#b4bd50" data-color="#b4bd50"></div>
-      <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
-      <!-- browns oranges -->
-      <div class="swatch" style="background:#943636" data-color="#943636"></div>
-      <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
-      <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
-      <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
-      <div class="swatch" style="background:#efb158" data-color="#efb158"></div>
-      <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
-      <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
+    <div id="modePicker">
+      <button id="brushModeBtn" class="mode-picker-btn btn" title="Switch to Brush mode (B)" data-mode="BRUSH">🖌️</button>
+      <button id="objectModeBtn" class="mode-picker-btn btn" title="Switch to Object mode (O or 2)" data-mode="OBJECT">🖇</button>
+      <button id="pathModeBtn" class="mode-picker-btn btn" title="Switch to Path mode (P or 3)" data-mode="PATH">🗺️</button>
+      <button id="eraserModeBtn" class="mode-picker-btn btn" title="Switch to Eraser mode (E)" data-mode="ERASER">️🧻</button>
+      <button id="rotateAxesBtn" class="btn" title="Flip axes (WILL NOT PRESERVE DRAWING!)">↻</button>
     </div>
-    <div id="symbolGrid">
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🌲">🌲</div>
-        <div class="symbol-btn btn" data-text="🌳">🌳</div>
+    <div id="modePanel">
+      <div id="colorPalette" class="mode-control" data-mode="brush">
+        <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
+        <div class="swatch" style="background:#000000" data-color="#000000"></div>
+        <!-- blues -->
+        <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
+        <div class="swatch" style="background:#535272" data-color="#535272"></div>
+        <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
+        <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
+        <!-- greens -->
+        <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
+        <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
+        <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
+        <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
+        <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
+        <div class="swatch" style="background:#b4bd50" data-color="#b4bd50"></div>
+        <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
+        <!-- browns oranges -->
+        <div class="swatch" style="background:#943636" data-color="#943636"></div>
+        <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
+        <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
+        <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
+        <div class="swatch" style="background:#efb158" data-color="#efb158"></div>
+        <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
+        <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
       </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🌵">🌵</div>
-        <div class="symbol-btn btn" data-text="🏜">🏜</div>
+      <div id="objectGrid" class="mode-control" data-mode="object">
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🌲">🌲</div>
+          <div class="object-btn btn" data-text="🌳">🌳</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🌵">🌵</div>
+          <div class="object-btn btn" data-text="🏜">🏜</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🏔">🏔</div>
+          <div class="object-btn btn" data-text="🗻">🗻</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🌋">🌋</div>
+          <div class="object-btn btn" data-text="🌊">🌊</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🌽">🌽</div>
+          <div class="object-btn btn" data-text="🌾">🌾</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🏯">🏯</div>
+          <div class="object-btn btn" data-text="🏰">🏰</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🔥">🔥</div>
+          <div class="object-btn btn" data-text="☄️">☄️</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🏝">🏝</div>
+          <div class="object-btn btn" data-text="🗿">🗿</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🏠">🏠</div>
+          <div class="object-btn btn" data-text="🏚">🏚</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🏯">🏯</div>
+          <div class="object-btn btn" data-text="🏰">🏰</div>
+        </div>
+        <div class="object-grid-row">
+          <div class="object-btn btn" data-text="🛖">🛖</div>
+          <div class="object-btn btn" data-text="🪵">🪵</div>
+        </div>
+        <!-- <div class="object-btn btn" data-object="barren"></div> -->
+        <!-- <div class="object-btn btn" data-object="dune"></div> -->
+        <!-- <div class="object-btn btn" data-object="mountain"></div> -->
+        <!-- <div class="object-btn btn" data-object="castle"></div> -->
+        <!-- <div class="object-btn btn" data-object="house"></div> -->
+        <!-- <div class="object-btn btn" data-object="pond"></div> -->
+        <!-- <div class="object-btn btn" data-object="lily"></div> -->
+        <!-- <div class="object-btn btn" data-object="marsh"></div> -->
+        <!-- <div class="object-btn btn" data-object="trees"></div> -->
+        <!-- <div class="object-btn btn" data-object="conifer"></div> -->
+        <!-- <div class="object-btn btn" data-object="water"></div> -->
       </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🏔">🏔</div>
-        <div class="symbol-btn btn" data-text="🗻">🗻</div>
+      <div id="pathSymbolGrid" class="mode-control" data-mode="path">
+        <div class="path-tip-symbol-btn btn" data-text="⚓">⚓</div>
+        <div class="path-tip-symbol-btn btn" data-text="🚢">🚢</div>
+        <div class="path-tip-symbol-btn btn" data-text="❌">❌</div>
+        <div class="path-tip-symbol-btn btn" data-text="📍">📍</div>
+        <div class="path-tip-symbol-btn btn" data-text="⚔️">⚔️</div>
+        <div class="path-tip-symbol-btn btn" data-text="🚩">🚩</div>
+        <div class="path-tip-symbol-btn btn" data-text="💣">💣</div>
       </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🌋">🌋</div>
-        <div class="symbol-btn btn" data-text="🌊">🌊</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🪵">🪵</div>
-        <div class="symbol-btn btn" data-text="🌾">🌾</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🏯">🏯</div>
-        <div class="symbol-btn btn" data-text="🏰">🏰</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🔥">🔥</div>
-        <div class="symbol-btn btn" data-text="☄️">☄️</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🏝">🏝</div>
-        <div class="symbol-btn btn" data-text="🗿">🗿</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🏠">🏠</div>
-        <div class="symbol-btn btn" data-text="🏚">🏚</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🏯">🏯</div>
-        <div class="symbol-btn btn" data-text="🏰">🏰</div>
-      </div>
-      <div class="symbol-grid-row">
-        <div class="symbol-btn btn" data-text="🛖">🛖</div>
-      </div>
-      <!-- <div class="symbol-btn btn" data-symbol="barren"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="dune"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="mountain"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="castle"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="house"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="pond"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="lily"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="marsh"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="trees"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="conifer"></div> -->
-      <!-- <div class="symbol-btn btn" data-symbol="water"></div> -->
-    </div>
-    <div id="controlsGrid">
-      <button id="rotateAxesBtn" class="btn" title="Flip axes">↻</button>
-      <button id="enableZoomingBtn" class="btn" title="Enable zooming (might be buggy)">⛶</button>
-      <button id="pathModeBtn" class="btn" title="Enable path mode">➶</button>
     </div>
   </div>
   <svg id="hexmap">
