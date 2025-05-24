@@ -1,6 +1,7 @@
 html, body {
     margin: 0;
     padding: 0;
+    background: grey;
 }
 
 /* Commons */
@@ -28,15 +29,35 @@ html, body {
     display: flex;
     padding: 1rem;
     position: absolute;
+    border-radius: 10px 10px 0px 0px;
+    overflow: hidden;
 }
 
-#modePicker {
+#dummyBtn {
+    background: transparent;
+}
+
+#layerPickerColumn {
+    display: flex;
+    flex-direction: column;
+}
+
+#layerPicker {
     display: flex;
     flex-direction: column;
     border-radius: 10px 0px 0px 10px;
     overflow: hidden;
     height: fit-content;
-    border-right: 1px solid #ccc;
+    border: 1px solid #ccc;
+}
+
+#toolPicker {
+    display: flex;
+    flex-direction: row;
+    border-radius: 10px 10px 0px 0px;
+    overflow: hidden;
+    border: 1px solid #ccc;
+    width: fit-content;
 }
 
 /* The color palette picker */
@@ -55,7 +76,7 @@ html, body {
 }
 
 /* The object/stamp/emoji picker */
-.mode-control {
+.layer-control {
     display: flex;
     flex-direction: column;
     width: fit-content;
@@ -80,37 +101,18 @@ html, body {
     height: 100vh;
 }
 
-/* SVG components */
+/* SVG components - keep these minimal so that all styling remains inside the svg to allow*/
+/* it to be exported without losing anything */
 /* each individual hex */
 .hex {
-    stroke: black; /* The color of the gaps between hexes */
     cursor: pointer;
-    stroke-width: 5px;
 }
 /* the object/emoji/stamp on top of a hex */
 .hex-object {
     pointer-events: none;
-    text-anchor: middle;
-    dominant-baseline: central;
-    /* depends on HEX_RADIUS */
-    font-size: 35px;
-    width: 70px;
-    height: 70px;
 }
 
 /* Path components - the line, the dor marks, the symbol at the end */
-.path-line {
-    stroke: #000;
-    stroke-dasharray: 4;
-    stroke-width: 2;
-}
-.path-marker {
-    fill: red;
-    stroke: white;
-}
 .path-tip-symbol {
-    font-size: 20px;
-    text-anchor: middle;
-    dominant-baseline: central;
     pointer-events: none;
 }
