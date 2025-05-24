@@ -25,12 +25,13 @@ const Layers = {
 const Tools = {
   BRUSH: "BRUSH",
   FILL: "FILL",
+  EYEDROPPER: "EYEDROPPER",
   ERASER: "ERASER",
 };
 
 const LAYER_TOOL_COMPATIBILITY = {
-  [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER],
-  [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER],
+  [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER],
+  [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER],
   [Layers.PATH]: [Tools.BRUSH],
   [Layers.TEXT]: [Tools.BRUSH],
 };
@@ -79,6 +80,9 @@ document.addEventListener("keydown", e => {
   case "KeyG":
     switchToTool(Tools.FILL);
     break;
+  case "KeyI":
+    switchToTool(Tools.EYEDROPPER);
+    break;
   case "KeyE":
     switchToTool(Tools.ERASER);
     break;
@@ -123,17 +127,13 @@ SWATCHES.forEach(swatch => {
           hexEntry.hex.setAttribute("fill", swatch.dataset.color);
       });
     } else {
-      foregroundColor = swatch.dataset.color;
-      SWATCHES.forEach(b => b.classList.remove("fgselected"));
-      swatch.classList.add("fgselected");
+      setForegroundColor(swatch.dataset.color);
     }
   });
   // right click - set as background color
   swatch.addEventListener("contextmenu", (e) => {
     e.preventDefault();
-    backgroundColor = swatch.dataset.color;
-    SWATCHES.forEach(b => b.classList.remove("bgselected"));
-    swatch.classList.add("bgselected");
+    setBackgroundColor(swatch.dataset.color);
   });
 });
 
@@ -192,6 +192,38 @@ SVG.addEventListener("wheel", e => {
   }
 });
 
+// from text
+function setCurrentObject(objectText) {
+  OBJECT_BUTTONS.forEach(b => {
+    if (b.dataset.text == objectText) {
+      b.classList.add("selected");
+      currentObject = b;
+    } else {
+      b.classList.remove("selected")
+    }
+  });
+}
+
+function setBackgroundColor(color) {
+  backgroundColor = color;
+  SWATCHES.forEach(b => {
+    if (b.dataset.color == color)
+      b.classList.add("bgselected")
+    else
+      b.classList.remove("bgselected")
+  });
+}
+
+function setForegroundColor(color) {
+  foregroundColor = color;
+  SWATCHES.forEach(b => {
+    if (b.dataset.color == color)
+      b.classList.add("fgselected")
+    else
+      b.classList.remove("fgselected")
+  });
+}
+
 function switchToLayer(layer) {
   currentLayer = layer;
   currentTool = Tools.BRUSH;
@@ -223,6 +255,8 @@ function switchToTool(tool) {
   if (!LAYER_TOOL_COMPATIBILITY[currentLayer].includes(tool)) {
     return;
   }
+  Object.keys(Tools).forEach(t => SVG.classList.remove(`${t.toLowerCase()}cursor`));
+  SVG.classList.add(`${tool.toLowerCase()}cursor`);
   currentTool = tool;
   TOOL_PICKER_BUTTONS.forEach(b => {
     if (b.dataset.tool == tool) {
@@ -304,6 +338,12 @@ function handleHexInteraction(c, r) {
       floodFill(c, r, colorHex);
     } else if (currentTool == Tools.ERASER) {
       hex.setAttribute("fill", canvasColor);
+    } else if (currentTool == Tools.EYEDROPPER) {
+      if (paintingBackground) {
+        setBackgroundColor(hex.getAttribute("fill"));
+      } else {
+        setForegroundColor(hex.getAttribute("fill"));
+      }
     }
   } else if (currentLayer == Layers.OBJECT) {
     if (currentObject == null) {
@@ -311,6 +351,8 @@ function handleHexInteraction(c, r) {
     }
     if (currentTool == Tools.BRUSH) {
       placeObjectOnHex(c, r);
+    } else if (currentTool == Tools.EYEDROPPER) {
+      setCurrentObject(OBJECTS_ON_HEXES[`${c},${r}`].textContent);
     } else if (currentTool == Tools.ERASER) {
       OBJECTS_ON_HEXES[`${c},${r}`].textContent = "";
     }
@@ -384,7 +426,6 @@ function drawHex(c, r) {
   hex.setAttribute("fill", canvasColor);
   hex.setAttribute("stroke", "black");
   hex.setAttribute("stroke-width", "5px");
-  hex.setAttribute("cursor", "pointer");
   hex.classList.add("hex");
 
   hex.addEventListener("mousedown", (e) => {

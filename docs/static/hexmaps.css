@@ -9,6 +9,22 @@ html, body {
     display: none !important;
 }
 
+.brushcursor {
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🖌</text></svg>") 0 16,auto;
+}
+
+.fillcursor {
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🪣</text></svg>") 16 0,auto;
+}
+
+.eyedroppercursor {
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>💧</text></svg>") 16 0,auto;
+}
+
+.erasercursor {
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🧻</text></svg>") 16 0,auto;
+}
+
 .btn {
     width: 50px;
     height: 50px;
@@ -105,7 +121,6 @@ html, body {
 /* it to be exported without losing anything */
 /* each individual hex */
 .hex {
-    cursor: pointer;
 }
 /* the object/emoji/stamp on top of a hex */
 .hex-object {
