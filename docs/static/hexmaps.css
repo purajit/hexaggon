@@ -3,7 +3,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    background-image: url("assets/images/tiling9.jpg");
+    background-image: url("/static/tiledspace.jpg");
     background-repeat: repeat;
 }
 
