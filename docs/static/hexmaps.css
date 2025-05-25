@@ -1,7 +1,8 @@
 html, body {
     margin: 0;
     padding: 0;
-    background: grey;
+    background-image: url("assets/images/tiling9.jpg");
+    background-repeat: repeat;
 }
 
 /* Commons */
@@ -18,11 +19,11 @@ html, body {
 }
 
 .eyedroppercursor {
-    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>💧</text></svg>") 16 0,auto;
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>💧</text></svg>") 20 0,auto;
 }
 
 .erasercursor {
-    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🧻</text></svg>") 16 0,auto;
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🧻</text></svg>") 0 0,auto;
 }
 
 .btn {
@@ -41,16 +42,21 @@ html, body {
 }
 
 /* The floating toolbar on the top-left */
-#toolbar {
+.toolbar {
     display: flex;
     padding: 1rem;
     position: absolute;
     border-radius: 10px 10px 0px 0px;
     overflow: hidden;
+    gap: 10px;
 }
 
-#dummyBtn {
-    background: transparent;
+#leftToolbar {
+    flex-direction: column;
+}
+
+#rightToolbar {
+    right: 0%;
 }
 
 #layerPickerColumn {
@@ -61,7 +67,7 @@ html, body {
 #layerPicker {
     display: flex;
     flex-direction: column;
-    border-radius: 10px 0px 0px 10px;
+    border-radius: 10px 10px 10px 10px;
     overflow: hidden;
     height: fit-content;
     border: 1px solid #ccc;
@@ -69,36 +75,46 @@ html, body {
 
 #toolPicker {
     display: flex;
-    flex-direction: row;
-    border-radius: 10px 10px 0px 0px;
+    flex-direction: column;
+    border-radius: 10px 10px 10px 10px;
     overflow: hidden;
     border: 1px solid #ccc;
     width: fit-content;
+    height: fit-content;
+    margin-left: auto;
 }
 
+#functionalities {
+    border-radius: 10px 10px 10px 10px;
+    overflow: hidden;
+}
 /* The color palette picker */
 .swatch {
     width: 30px;
     height: 30px;
-    border: 2px solid transparent;
     cursor: pointer;
+    box-sizing: border-box;
+    border-width: 5px;
 }
-.swatch.fgselected {
+.primaryselected {
     border-color: black;
+    border-style: solid;
 }
-.swatch.bgselected {
+.secondaryselected {
     border-color: black;
     border-style: dotted;
 }
 
 /* The object/stamp/emoji picker */
-.layer-control {
+.control-panel {
     display: flex;
     flex-direction: column;
     width: fit-content;
+    height: fit-content;
     gap: 0.5rem;
     background: rgba(255, 255, 255);
     padding: 10px;
+    border-radius: 10px 10px 10px 10px;
 }
 .object-grid-row {
     display: flex;
@@ -106,6 +122,7 @@ html, body {
     gap: 0.5rem;
 }
 .object-btn {
+    box-sizing: border-box;
     background-size: contain;
     background-repeat: no-repeat;
 }
