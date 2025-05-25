@@ -627,6 +627,11 @@ function drawPath(hexEntry) {
 }
 
 function placeTextAtPoint(pt) {
+  const textInput = TEXT_INPUT_DIV.value;
+  if (!textInput) {
+    console.log("eh")
+    return;
+  }
   const textbox = document.createElementNS("http://www.w3.org/2000/svg", "text");
   textbox.setAttribute("font-size", TEXT_FONT_SIZE_DIV.value);
   if (GLOBAL_STATE.layers.TEXT.bold) {
@@ -642,7 +647,7 @@ function placeTextAtPoint(pt) {
   textbox.setAttribute("x", pt.x);
   textbox.setAttribute("y", pt.y);
   textbox.setAttribute("fill", GLOBAL_STATE.layers.TEXT.primaryColor);
-  textbox.textContent = TEXT_INPUT_DIV.value;
+  textbox.textContent = textInput;
   textbox.classList.add("no-pointer-events");
   textbox.classList.add("in-image-text");
   textbox.addEventListener("click", e => {
