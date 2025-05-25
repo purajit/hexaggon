@@ -1,13 +1,10 @@
+/* NOTE: ALL SVG STYLING SHOULD BE DONE IN JS SO THAT IMAGE EXPORT CONTAINS ALL STYLING ATTRIBUTES */
+
 html, body {
     margin: 0;
     padding: 0;
     background-image: url("assets/images/tiling9.jpg");
     background-repeat: repeat;
-}
-
-/* Commons */
-.hidden {
-    display: none !important;
 }
 
 .brushcursor {
@@ -41,103 +38,20 @@ html, body {
     background: #91b985;
 }
 
-/* The floating toolbar on the top-left */
 .toolbar {
-    display: flex;
     padding: 1rem;
     position: absolute;
-    border-radius: 10px 10px 0px 0px;
-    overflow: hidden;
-    gap: 10px;
 }
 
-#leftToolbar {
-    flex-direction: column;
+.control-panel {
+    padding: 10px;
 }
 
-#rightToolbar {
-    right: 0%;
-}
-
-#layerPickerColumn {
-    display: flex;
-    flex-direction: column;
-}
-
-#layerPicker {
-    display: flex;
-    flex-direction: column;
-    border-radius: 10px 10px 10px 10px;
-    overflow: hidden;
-    height: fit-content;
-    outline: 1px solid #ccc;
-}
-
-#toolPicker {
-    display: flex;
-    flex-direction: column;
-    border-radius: 10px 10px 10px 10px;
-    overflow: hidden;
-    outline: 1px solid #ccc;
-    width: fit-content;
-    height: fit-content;
-    margin-left: auto;
-}
-
-#functionalities {
-    border-radius: 10px 10px 10px 10px;
-    overflow: hidden;
-    outline: 1px solid #ccc;
-}
-
-/* The color palette picker */
 .swatch {
     width: 30px;
     height: 30px;
     cursor: pointer;
-    box-sizing: border-box;
     border: 1px solid grey;
-}
-#swatchesHolder {
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
-}
-
-/* The object/stamp/emoji picker */
-.control-panel {
-    display: flex;
-    flex-direction: column;
-    width: fit-content;
-    height: fit-content;
-    gap: 0.5rem;
-    background: rgba(255, 255, 255);
-    padding: 10px;
-    border-radius: 10px 10px 10px 10px;
-    align-items: center;
-    outline: 1px solid #ccc;
-}
-.object-grid-row {
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
-}
-.object-btn {
-    box-sizing: border-box;
-    background-size: contain;
-    background-repeat: no-repeat;
-}
-.swatches {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.primaryselected {
-    border: 5px solid black;
-}
-.secondaryselected {
-    border: 5px dotted black;
 }
 
 /* The whole entire hex map */
@@ -147,8 +61,56 @@ html, body {
     height: 100vh;
 }
 
-/* SVG components - keep these minimal so that all styling remains inside the svg to allow*/
-/* it to be exported without losing anything */
+/* Composible properties */
+.hidden {
+    display: none !important;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.gappy {
+    gap: 0.5rem;
+
+}
+
+.primaryselected {
+    border: 5px solid black;
+}
+
+.secondaryselected {
+    border: 5px dotted black;
+}
+
+.border-box {
+    box-sizing: border-box;
+}
+
 .no-pointer-events {
     pointer-events: none;
+}
+
+.allow-pointer-events {
+    pointer-events: auto !important;
+}
+
+.overlaid {
+    border-radius: 10px 10px 10px 10px;
+    overflow: hidden;
+    outline: 1px solid #ccc;
+    height: fit-content;
+    width: fit-content;
+    background: rgba(255, 255, 255);
+    align-items: center;
+}
+
+.right-aligned {
+    right: 0%;
 }

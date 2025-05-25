@@ -5,66 +5,67 @@
   <link rel="stylesheet" href="/static/hexmaps.css">
 </head>
 <body>
-  <div id="leftToolbar" class="toolbar">
-    <div id="layerPicker">
-      <button class="layer-picker-btn btn" title="Switch to Base layer (1)" data-layer="BASE">🌐️</button>
-      <button class="layer-picker-btn btn" title="Switch to Object layer (2)" data-layer="OBJECT">🖇</button>
-      <button class="layer-picker-btn btn" title="Switch to Path layer (3)" data-layer="PATH">🗺️</button>
-      <button class="layer-picker-btn btn" title="Switch to Boundary layer (4)" data-layer="BOUNDARY">〰</button>
-      <button class="layer-picker-btn btn" title="Switch to Text layer (5)" data-layer="TEXT">📝</button>
+  <div class="toolbar flex-column gappy">
+    <div id="layerPicker" class="flex-column overlaid">
+      <button class="layer-picker-btn btn" title="Base layer (1)" data-layer="BASE">🌐️</button>
+      <button class="layer-picker-btn btn" title="Object layer (2)" data-layer="OBJECT">🖇</button>
+      <button class="layer-picker-btn btn" title="Path layer (3)" data-layer="PATH">🗺️</button>
+      <button class="layer-picker-btn btn" title="Boundary layer (4)" data-layer="BOUNDARY">〰</button>
+      <button class="layer-picker-btn btn" title="Text layer (5)" data-layer="TEXT">📝</button>
     </div>
-    <div id="toolPicker">
+    <div id="toolPicker" class="flex-column overlaid">
+      <button class="tool-picker-btn btn" title="Select tool (M)" data-tool="SELECT">⊹</button>
       <button class="tool-picker-btn btn" title="Brush tool (B)" data-tool="BRUSH">🖌</button>
       <button class="tool-picker-btn btn" title="Fill tool (G)" data-tool="FILL">🪣</button>
       <button class="tool-picker-btn btn" title="Eyedropper tool (I)" data-tool="EYEDROPPER">️💧</button>
       <button class="tool-picker-btn btn" title="Eraser tool (E)" data-tool="ERASER">️🧻</button>
     </div>
-    <div id="functionalities">
+    <div class="overlaid">
       <button id="saveBtn" class="btn" title="Save map! (For personal appreciation, not for export/import - yet)">💾</button>
       <button id="rotateAxesBtn" class="btn" title="Flip axes (WILL NOT PRESERVE DRAWING!)">↻</button>
     </div>
   </div>
-  <div id="rightToolbar" class="toolbar">
-    <div id="objectGrid" class="layer-control control-panel" data-control="OBJECT">
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🌲">🌲</div>
-        <div class="object-btn btn" data-text="🌳">🌳</div>
+  <div class="toolbar right-aligned flex-row gappy">
+    <div class="layer-control control-panel flex-column gappy overlaid" data-control="OBJECT">
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🌲">🌲</div>
+        <div class="object-btn btn border-box" data-text="🌳">🌳</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🌵">🌵</div>
-        <div class="object-btn btn" data-text="🏜">🏜</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🌵">🌵</div>
+        <div class="object-btn btn border-box" data-text="🏜">🏜</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🏔">🏔</div>
-        <div class="object-btn btn" data-text="🗻">🗻</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🏔">🏔</div>
+        <div class="object-btn btn border-box" data-text="🗻">🗻</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🌋">🌋</div>
-        <div class="object-btn btn secondaryselected" data-text="🌊">🌊</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🌋">🌋</div>
+        <div class="object-btn btn border-box secondaryselected" data-text="🌊">🌊</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn primaryselected" data-text="🌽">🌽</div>
-        <div class="object-btn btn" data-text="🌾">🌾</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box primaryselected" data-text="🌽">🌽</div>
+        <div class="object-btn btn border-box" data-text="🌾">🌾</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🏯">🏯</div>
-        <div class="object-btn btn" data-text="🏰">🏰</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🏯">🏯</div>
+        <div class="object-btn btn border-box" data-text="🏰">🏰</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🔥">🔥</div>
-        <div class="object-btn btn" data-text="☄️">☄️</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🔥">🔥</div>
+        <div class="object-btn btn border-box" data-text="☄️">☄️</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🏝">🏝</div>
-        <div class="object-btn btn" data-text="🗿">🗿</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🏝">🏝</div>
+        <div class="object-btn btn border-box" data-text="🗿">🗿</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🏠">🏠</div>
-        <div class="object-btn btn" data-text="🏚">🏚</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🏠">🏠</div>
+        <div class="object-btn btn border-box" data-text="🏚">🏚</div>
       </div>
-      <div class="object-grid-row">
-        <div class="object-btn btn" data-text="🛖">🛖</div>
-        <div class="object-btn btn" data-text="🪵">🪵</div>
+      <div class="flex-row gappy">
+        <div class="object-btn btn border-box" data-text="🛖">🛖</div>
+        <div class="object-btn btn border-box" data-text="🪵">🪵</div>
       </div>
       <!-- <div class="object-btn btn" data-object="barren"></div> -->
       <!-- <div class="object-btn btn" data-object="dune"></div> -->
@@ -78,22 +79,22 @@
       <!-- <div class="object-btn btn" data-object="conifer"></div> -->
       <!-- <div class="object-btn btn" data-object="water"></div> -->
     </div>
-    <div id="pathSymbolGrid" class="layer-control control-panel" data-control="PATHTIPSYMBOL">
-      <div class="path-tip-symbol-btn btn" data-text="⚓">⚓</div>
-      <div class="path-tip-symbol-btn btn" data-text="🚢">🚢</div>
-      <div class="path-tip-symbol-btn btn" data-text="❌">❌</div>
-      <div class="path-tip-symbol-btn btn" data-text="📍">📍</div>
-      <div class="path-tip-symbol-btn btn" data-text="⚔️">⚔️</div>
-      <div class="path-tip-symbol-btn btn" data-text="🚩">🚩</div>
-      <div class="path-tip-symbol-btn btn" data-text="💣">💣</div>
+    <div id="pathSymbolGrid" class="layer-control control-panel flex-column gappy overlaid" data-control="PATHTIPSYMBOL">
+      <div class="path-tip-symbol-btn btn border-box primaryselected" data-text="⚓">⚓</div>
+      <div class="path-tip-symbol-btn btn border-box" data-text="🚢">🚢</div>
+      <div class="path-tip-symbol-btn btn border-box" data-text="❌">❌</div>
+      <div class="path-tip-symbol-btn btn border-box" data-text="📍">📍</div>
+      <div class="path-tip-symbol-btn btn border-box" data-text="⚔️">⚔️</div>
+      <div class="path-tip-symbol-btn btn border-box" data-text="🚩">🚩</div>
+      <div class="path-tip-symbol-btn btn border-box" data-text="💣">💣</div>
     </div>
-    <div id="colorPalette" class="layer-control control-panel" data-control="COLOR">
+    <div class="layer-control control-panel flex-column gappy overlaid" data-control="COLOR">
       <svg xmlns='http://www.w3.org/2000/svg'  width='45' height='45' viewport='0 0 45 45'>
         <rect id="chosenSecondaryColor" x="0" y="0" width="30" height="30" fill="#7eaaad" stroke="grey"/>
         <rect id="chosenPrimaryColor" x="15" y="15" width="30" height="30" fill="#b8895f" stroke="grey"/>
       </svg>
-      <div id="swatchesHolder">
-        <div class="swatches">
+      <div class="flex-row gappy">
+        <div class="flex-column gappy">
           <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
           <!-- blues -->
           <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
@@ -109,7 +110,7 @@
           <div class="swatch" style="background:#574d39" data-color="#574d39"></div>
           <div class="swatch" style="background:#000000" data-color="#000000"></div>
         </div>
-        <div class="swatches">
+        <div class="flex-column gappy">
           <div class="swatch" style="background:#535272" data-color="#535272"></div>
           <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
           <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>

@@ -1,21 +1,10 @@
-const SVG = document.getElementById("hexmap");
-const SWATCHES = document.querySelectorAll(".swatch");
-const LAYER_PICKER_BUTTONS = document.querySelectorAll(".layer-picker-btn");
-const TOOL_PICKER_BUTTONS = document.querySelectorAll(".tool-picker-btn");
-const LAYER_CONTROLS = document.querySelectorAll(".layer-control");
-const OBJECT_BUTTONS = document.querySelectorAll(".object-btn");
-const PATH_TIP_SYMBOL_BUTTONS = document.querySelectorAll(".path-tip-symbol-btn");
-const CHOSEN_PRIMARY_COLOR_DIV = document.getElementById("chosenPrimaryColor");
-const CHOSEN_SECONDARY_COLOR_DIV = document.getElementById("chosenSecondaryColor");
-
-// Hex map setup
+/******************
+ * GAME CONSTANTS *
+ ******************/
 const HEX_RADIUS = 35;
-// used for distance calculations
-const HEX_RADIUS_SQUARED = HEX_RADIUS ** 2;
+const HEX_RADIUS_SQUARED = HEX_RADIUS ** 2;  // to avoid sqrt in distance calculations
 const HEX_COLS = Math.ceil(window.innerWidth / (HEX_RADIUS * 1.5));
 const HEX_ROWS = Math.ceil(window.innerHeight / (Math.sqrt(3) * HEX_RADIUS));
-const HEXES = {};
-const OBJECTS_ON_HEXES = {};
 
 const Layers = {
   NONE: "NONE",
@@ -27,6 +16,7 @@ const Layers = {
 };
 
 const Tools = {
+  SELECT: "SELECT",
   BRUSH: "BRUSH",
   FILL: "FILL",
   EYEDROPPER: "EYEDROPPER",
@@ -42,9 +32,9 @@ const Controls = {
 const LAYER_TOOL_COMPATIBILITY = {
   [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER],
   [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER],
-  [Layers.PATH]: [Tools.BRUSH],
+  [Layers.PATH]: [Tools.BRUSH, Tools.SELECT],
   [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER],
-  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER],
+  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT],
 };
 
 const LAYER_CONTROL_COMPATIBILITY = {
@@ -55,15 +45,20 @@ const LAYER_CONTROL_COMPATIBILITY = {
   [Layers.TEXT]: [Controls.COLOR],
 };
 
+/****************
+ * GLOBAL STATE *
+ ****************/
 const GLOBAL_STATE = {
   // whether the use vertical-oriented axes (hexagon pointy up and down)
   useVerticalAxes: false,
+  hexes: {},
   currentLayer: Layers.BASE,
   currentTool: Tools.BRUSH,
   keyState: {
     holdingKeyZ: false,
     holdingMeta: false,
   },
+  selectedElements: [],
   canvasColor: "#c4b9a5",
 
   // brushing metadata/status
@@ -79,6 +74,7 @@ const GLOBAL_STATE = {
     OBJECT: {
       primaryObject: "🌽",
       secondaryObject: "🌊",
+      objectsOnHexes: {},
     },
 
     PATH: {
@@ -105,6 +101,20 @@ const GLOBAL_STATE = {
   },
 }
 
+/***********
+ * THE DOM *
+ ***********/
+const SVG = document.getElementById("hexmap");
+const SWATCHES = document.querySelectorAll(".swatch");
+const LAYER_PICKER_BUTTONS = document.querySelectorAll(".layer-picker-btn");
+const TOOL_PICKER_BUTTONS = document.querySelectorAll(".tool-picker-btn");
+const LAYER_CONTROLS = document.querySelectorAll(".layer-control");
+const OBJECT_BUTTONS = document.querySelectorAll(".object-btn");
+const PATH_TIP_SYMBOL_BUTTONS = document.querySelectorAll(".path-tip-symbol-btn");
+const CHOSEN_PRIMARY_COLOR_DIV = document.getElementById("chosenPrimaryColor");
+const CHOSEN_SECONDARY_COLOR_DIV = document.getElementById("chosenSecondaryColor");
+
+// keyboard shortcuts
 document.addEventListener("keydown", e => {
   switch(e.code) {
   case "Digit1":
@@ -134,6 +144,9 @@ document.addEventListener("keydown", e => {
   case "KeyE":
     switchToTool(Tools.ERASER);
     break;
+  case "KeyM":
+    switchToTool(Tools.SELECT);
+    break;
   case "KeyZ":
     GLOBAL_STATE.keyState.holdingKeyZ = true;
     break;
@@ -148,12 +161,13 @@ document.addEventListener("keyup", e => {
   if (e.code == "MetaLeft") GLOBAL_STATE.keyState.holdingMeta = false;
 });
 
-document.addEventListener("visibilitychange", () => {
+// when window loses focus, reset - otherwise, Cmd+Tab to change windows
+// will continue having holdingMeta after coming back
+document.addEventListener("blur", () => {
   GLOBAL_STATE.keyState.holdingKeyZ = false;
   GLOBAL_STATE.keyState.holdingMeta = false;
 });
 
-// Toolbar events listeners
 LAYER_PICKER_BUTTONS.forEach(layerPicker => {
   layerPicker.addEventListener("click", (e) => {
     switchToLayer(layerPicker.dataset.layer);
@@ -173,7 +187,7 @@ SWATCHES.forEach(swatch => {
     if (GLOBAL_STATE.keyState.holdingMeta) {
       const previousCanvasColor = GLOBAL_STATE.canvasColor;
       GLOBAL_STATE.canvasColor = swatch.dataset.color;
-      Object.values(HEXES).forEach(hexEntry => {
+      Object.values(GLOBAL_STATE.hexes).forEach(hexEntry => {
         if (hexEntry.hex.getAttribute("fill") == previousCanvasColor)
           hexEntry.hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
       });
@@ -201,18 +215,18 @@ OBJECT_BUTTONS.forEach(btn => {
 
 PATH_TIP_SYMBOL_BUTTONS.forEach(btn => {
   btn.addEventListener("click", () => {
-    if (btn.classList.contains("selected")) {
+    if (btn.classList.contains("primaryselected")) {
       return;
     }
-    PATH_TIP_SYMBOL_BUTTONS.forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
+    PATH_TIP_SYMBOL_BUTTONS.forEach(b => b.classList.remove("primaryselected"));
+    btn.classList.add("primaryselected");
     GLOBAL_STATE.layers.PATH.currentPathTipSymbol = btn.dataset.text;
   });
 });
 
 document.getElementById("rotateAxesBtn").addEventListener("click", (e) => {
   GLOBAL_STATE.useVerticalAxes = !GLOBAL_STATE.useVerticalAxes;
-  init();
+  svgInit();
 });
 
 document.getElementById("saveBtn").addEventListener("click", (e) => {
@@ -239,6 +253,9 @@ SVG.addEventListener("wheel", e => {
   }
 });
 
+/*********************************
+ * INTERACTING WITH GLOBAL STATE *
+ *********************************/
 function setPrimaryObject(objectText) {
   GLOBAL_STATE.layers.OBJECT.primaryObject = objectText;
   OBJECT_BUTTONS.forEach(b => {
@@ -306,7 +323,6 @@ function switchToTool(tool) {
   }
   Object.keys(Tools).forEach(t => SVG.classList.remove(`${t.toLowerCase()}cursor`));
   SVG.classList.add(`${tool.toLowerCase()}cursor`);
-  GLOBAL_STATE.currentTool = tool;
   TOOL_PICKER_BUTTONS.forEach(b => {
     if (b.dataset.tool == tool) {
       b.classList.add("selected")
@@ -314,15 +330,23 @@ function switchToTool(tool) {
       b.classList.remove("selected");
     }
   });
+  if (GLOBAL_STATE.currentLayer == Layers.TEXT) {
+    SVG.querySelectorAll(".in-image-text").forEach(t => {
+      if (tool == Tools.SELECT && GLOBAL_STATE.currentTool != Tools.SELECT) {
+        t.classList.add("allow-pointer-events");
+        t.classList.remove("no-pointer-events");
+      } else if (tool != Tools.SELECT && GLOBAL_STATE.currentTool == Tools.SELECT) {
+        t.classList.remove("allow-pointer-events");
+        t.classList.add("no-pointer-events");
+      }
+    });
+  }
+  GLOBAL_STATE.currentTool = tool;
 }
 
-function choose(choices) {
-  let index = Math.floor(Math.random() * choices.length);
-  return choices[index];
-}
-
-
-// SVG utils
+/*************
+ * SVG UTILS *
+ *************/
 function scroll(xdiff, ydiff) {
   const viewBox = SVG.getAttribute("viewBox") || `0 0 ${window.innerWidth} ${window.innerHeight}`;
   const [x, y, width, height] = viewBox.split(" ").map(Number);
@@ -357,25 +381,33 @@ function hexIndexToPixel(c, r) {
   return {x, y};
 }
 
-function colorHex(c, r) {
-  const fillColor = GLOBAL_STATE.usingSecondary ? GLOBAL_STATE.layers.BASE.secondaryColor : GLOBAL_STATE.layers.BASE.primaryColor;
-  HEXES[`${c},${r}`].hex.setAttribute("fill", fillColor);
-  // easy way to test hex neighbor logic
-  // getHexNeighbors(c, r).forEach(h => {
-  //   console.log(h)
-  //   const neighborhex = HEXES[`${h[0]},${h[1]}`].hex;
-  //   neighborhex.setAttribute("fill", "black");
-  // });
-}
-
-function eraseHex(c, r) {
-  OBJECTS_ON_HEXES[`${c},${r}`].textContent = "";
-  HEXES[`${c},${r}`].hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
-}
-
-function placeObjectOnHex(c, r) {
-  const objectToUse = GLOBAL_STATE.usingSecondary ? GLOBAL_STATE.layers.OBJECT.secondaryObject : GLOBAL_STATE.layers.OBJECT.primaryObject;
-  OBJECTS_ON_HEXES[`${c},${r}`].textContent = objectToUse;
+function getHexNeighbors(c, r) {
+  if (GLOBAL_STATE.useVerticalAxes) {
+    const offset = (r % 2 == 0) ? -1 : 1;
+    return [
+      // left and right
+      [c-1, r],
+      [c+1, r],
+      // two to the top
+      [c, r-1],
+      [c + offset, r-1],
+      // two to the bottom
+      [c, r+1],
+      [c + offset, r+1],
+    ];
+  }
+  const offset = (c % 2 == 0) ? -1 : 1;
+  return [
+    // up and down
+    [c, r-1],
+    [c, r+1],
+    // two to the left
+    [c-1, r],
+    [c-1, r + offset],
+    // two to the right
+    [c+1, r],
+    [c+1, r + offset],
+  ];
 }
 
 function makeEraseable(element) {
@@ -385,6 +417,47 @@ function makeEraseable(element) {
   });
 }
 
+function colorHex(c, r) {
+  const fillColor = GLOBAL_STATE.usingSecondary ? GLOBAL_STATE.layers.BASE.secondaryColor : GLOBAL_STATE.layers.BASE.primaryColor;
+  GLOBAL_STATE.hexes[`${c},${r}`].hex.setAttribute("fill", fillColor);
+  // easy way to test hex neighbor logic
+  // getHexNeighbors(c, r).forEach(h => {
+  //   console.log(h)
+  //   const neighborhex = GLOBAL_STATE.hexes[`${h[0]},${h[1]}`].hex;
+  //   neighborhex.setAttribute("fill", "black");
+  // });
+}
+
+function floodFill(startC, startR, fn) {
+  const queue = [[startC, startR]];
+  const visited = [`${startC},${startR}`];
+  const expectedFill = GLOBAL_STATE.hexes[`${startC},${startR}`].hex.getAttribute("fill");
+  while (queue.length > 0) {
+    const [c, r] = queue.shift();
+    getHexNeighbors(c, r).forEach(n => {
+      const stringedCoords = `${n[0]},${n[1]}`;
+      if (visited.includes(stringedCoords)) return;
+      const nhexentry = GLOBAL_STATE.hexes[stringedCoords];
+      if (nhexentry == null) return;
+      const nhex = nhexentry.hex;
+      if (nhex.getAttribute("fill") != expectedFill) return
+      queue.push(n);
+      visited.push(stringedCoords);
+    });
+  }
+  visited.forEach(s => fn(...s.split(",")));
+}
+
+function eraseHex(c, r) {
+  GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent = "";
+  GLOBAL_STATE.hexes[`${c},${r}`].hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
+}
+
+function placeObjectOnHex(c, r) {
+  const objectToUse = GLOBAL_STATE.usingSecondary ? GLOBAL_STATE.layers.OBJECT.secondaryObject : GLOBAL_STATE.layers.OBJECT.primaryObject;
+  GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent = objectToUse;
+}
+
 function drawBoundary(e) {
   const pt = new DOMPoint(e.x, e.y).matrixTransform(SVG.getScreenCTM().inverse());
   const lastHexEntry = GLOBAL_STATE.layers.BOUNDARY.lastHexEntry;
@@ -392,9 +465,12 @@ function drawBoundary(e) {
   let closestDistance = Infinity;
   let closestHexEntry = null;
   getHexNeighbors(lastHexEntry.c, lastHexEntry.r).forEach(n => {
-    const hexnEntry = HEXES[`${n[0]},${n[1]}`];
-    const hexn = HEXES[`${n[0]},${n[1]}`].hex;
+    const hexnEntry = GLOBAL_STATE.hexes[`${n[0]},${n[1]}`];
+    const hexn = GLOBAL_STATE.hexes[`${n[0]},${n[1]}`].hex;
     for (let i = 0; i < hexn.points.length; i++) {
+      // first, check that the point is even a neighbor - since we know it's a hex vertex, it must
+      // be within HEX_RADIUS distance in both dimensions. This helps cut down how much squaring we
+      // have to do
       if (Math.abs(hexn.points[i].x - pt.x) < HEX_RADIUS && Math.abs(hexn.points[i].y - pt.y) < HEX_RADIUS ) {
         const distance = (hexn.points[i].x - pt.x) ** 2 + (hexn.points[i].y - pt.y) ** 2;
         if (distance < closestDistance) {
@@ -422,7 +498,7 @@ function drawBoundary(e) {
   line.setAttribute("stroke", strokeColor);
   line.setAttribute("stroke-width", 9);
   line.setAttribute("stroke-linecap", "round");
-  line.classList.add("no-pointer-events");
+  // line.classList.add("no-pointer-events");
   makeEraseable(line);
   SVG.appendChild(line);
   GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = closest;
@@ -447,15 +523,33 @@ function startBoundaryDrawing(hexEntry, mouseX, mouseY) {
   GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = closest;
   GLOBAL_STATE.layers.BOUNDARY.lastHexEntry = hexEntry;
 
+  // our primary mouseover event isn't good enough, since it only fires once per hex
+  // at the same time, having a mousemove main loop is just wasteful. so add a special
+  // listened just during boundary drawing, then remove it once drawn
   SVG.addEventListener("mousemove", drawBoundary);
+}
+
+function isEqualWithinTolerance(x1, x2) {
+  return Math.abs(x1 - x2) <= 0.1;
 }
 
 function drawPath(hexEntry) {
   if (GLOBAL_STATE.layers.PATH.activePath != null) {
-    const p = SVG.createSVGPoint();
-    p.x = hexEntry.x; p.y = hexEntry.y;
-    GLOBAL_STATE.layers.PATH.activePath.line.points.appendItem(p);
-    GLOBAL_STATE.layers.PATH.activePath.lineHighlight.points.appendItem(p);
+    const pathLinePoints = GLOBAL_STATE.layers.PATH.activePath.line.points;
+    if (isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 1].x, hexEntry.x) && isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 1].y, hexEntry.y)) {
+      return;
+    }
+    if (pathLinePoints.length > 1 && isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 2].x, hexEntry.x) && isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 2].y, hexEntry.y)) {
+      const pathLineHighlightPoints = GLOBAL_STATE.layers.PATH.activePath.lineHighlight.points;
+      pathLineHighlightPoints.removeItem(pathLinePoints.length - 1);
+      pathLinePoints.removeItem(pathLinePoints.length - 1);
+    } else {
+      const p = SVG.createSVGPoint();
+      p.x = hexEntry.x; p.y = hexEntry.y;
+      GLOBAL_STATE.layers.PATH.activePath.line.points.appendItem(p);
+      GLOBAL_STATE.layers.PATH.activePath.lineHighlight.points.appendItem(p);
+    }
+
     GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("x", hexEntry.x);
     GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("y", hexEntry.y);
     GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("c", hexEntry.c);
@@ -486,6 +580,7 @@ function drawPath(hexEntry) {
   lineHighlight.setAttribute("stroke-linejoin", "round");
   line.setAttribute("stroke-width", 3);
   line.points.initialize(p);
+  line.classList.add("no-pointer-events");
   lineHighlight.setAttribute("fill", "none");
   lineHighlight.setAttribute("stroke", GLOBAL_STATE.layers.PATH.secondaryColor);
   lineHighlight.setAttribute("stroke-linecap", "round");
@@ -493,6 +588,7 @@ function drawPath(hexEntry) {
   lineHighlight.setAttribute("stroke-width", 7);
   lineHighlight.setAttribute("stroke-opacity", 0.5);
   lineHighlight.points.initialize(p);
+  lineHighlight.classList.add("no-pointer-events");
 
   const path = {line, lineHighlight, pathTip};
   GLOBAL_STATE.layers.PATH.paths.push(path);
@@ -503,7 +599,7 @@ function drawPath(hexEntry) {
 }
 
 function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
-  const hexEntry = HEXES[`${c},${r}`];
+  const hexEntry = GLOBAL_STATE.hexes[`${c},${r}`];
   const {hex, x, y} = hexEntry;
   if (GLOBAL_STATE.currentLayer == Layers.BASE) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
@@ -527,12 +623,12 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
       placeObjectOnHex(c, r);
     } else if (GLOBAL_STATE.currentTool == Tools.EYEDROPPER) {
       if (GLOBAL_STATE.usingSecondary) {
-        setSecondaryObject(OBJECTS_ON_HEXES[`${c},${r}`].textContent);
+        setSecondaryObject(GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent);
       } else {
-        setPrimaryObject(OBJECTS_ON_HEXES[`${c},${r}`].textContent);
+        setPrimaryObject(GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent);
       }
     } else if (GLOBAL_STATE.currentTool == Tools.ERASER) {
-      OBJECTS_ON_HEXES[`${c},${r}`].textContent = "";
+      GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent = "";
     }
   } else if (GLOBAL_STATE.currentLayer == Layers.BOUNDARY) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
@@ -541,10 +637,13 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
   } else if (GLOBAL_STATE.currentLayer == Layers.TEXT) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       const textbox = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      textbox.setAttribute("x", x);
-      textbox.setAttribute("y", y);
+      const pt = new DOMPoint(mouseX, mouseY).matrixTransform(SVG.getScreenCTM().inverse());
+      textbox.setAttribute("x", pt.x);
+      textbox.setAttribute("y", pt.y);
       textbox.setAttribute("fill", GLOBAL_STATE.layers.TEXT.primaryColor);
       textbox.textContent = "Here be dragons";
+      textbox.classList.add("no-pointer-events");
+      textbox.classList.add("in-image-text");
       textbox.addEventListener("click", e => {
         if (GLOBAL_STATE.currentTool == Tools.ERASER) SVG.removeChild(textbox);
       });
@@ -614,79 +713,16 @@ function drawHex(c, r) {
   hexObject.setAttribute("height", `${2*HEX_RADIUS}px`);
   hexObject.classList.add("no-pointer-events");
 
-  HEXES[`${c},${r}`] = {hex, x, y, c, r};
-  OBJECTS_ON_HEXES[`${c},${r}`] = hexObject;
+  GLOBAL_STATE.hexes[`${c},${r}`] = {hex, x, y, c, r};
+  GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`] = hexObject;
 
   SVG.appendChild(hex);
   SVG.appendChild(hexObject);
 }
 
-// Hex neighbors, filling, graph logic
-function floodFill(startC, startR, fn) {
-  const queue = [[startC, startR]];
-  const visited = [`${startC},${startR}`];
-  const expectedFill = HEXES[`${startC},${startR}`].hex.getAttribute("fill");
-  while (queue.length > 0) {
-    const [c, r] = queue.shift();
-    getHexNeighbors(c, r).forEach(n => {
-      const stringedCoords = `${n[0]},${n[1]}`;
-      if (visited.includes(stringedCoords)) return;
-      const nhexentry = HEXES[stringedCoords];
-      if (nhexentry == null) return;
-      const nhex = nhexentry.hex;
-      if (nhex.getAttribute("fill") != expectedFill) return
-      queue.push(n);
-      visited.push(stringedCoords);
-    });
-  }
-  visited.forEach(s => fn(...s.split(",")));
-}
-
-function getHexNeighbors(c, r) {
-  if (GLOBAL_STATE.useVerticalAxes) {
-    const offset = (r % 2 == 0) ? -1 : 1;
-    return [
-      // left and right
-      [c-1, r],
-      [c+1, r],
-      // two to the top
-      [c, r-1],
-      [c + offset, r-1],
-      // two to the bottom
-      [c, r+1],
-      [c + offset, r+1],
-    ];
-  }
-  const offset = (c % 2 == 0) ? -1 : 1;
-  return [
-    // up and down
-    [c, r-1],
-    [c, r+1],
-    // two to the left
-    [c-1, r],
-    [c-1, r + offset],
-    // two to the right
-    [c+1, r],
-    [c+1, r + offset],
-  ];
-}
-
-function saveSvg() {
-  const svgData = SVG.outerHTML;
-  const preface = '<?xml version="1.0" standalone="no"?>\r\n';
-  const svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
-  const svgUrl = URL.createObjectURL(svgBlob);
-  const downloadLink = document.createElement("a");
-  downloadLink.href = svgUrl;
-  downloadLink.download = name;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-}
-
-function init() {
+function svgInit() {
   SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  for (let h in HEXES) delete HEXES[h];
+  for (let h in GLOBAL_STATE.hexes) delete GLOBAL_STATE.hexes[h];
   Array.prototype.slice.call(document.getElementsByTagName("polygon")).forEach(e => e.remove());
 
   for (let c = 0; c < 3*HEX_COLS; c++) {
@@ -703,4 +739,20 @@ function init() {
   // }
 }
 
-init();
+/*************************
+ * EXTRA FUNCTIONALITIES *
+ *************************/
+function saveSvg() {
+  const svgData = SVG.outerHTML;
+  const preface = '<?xml version="1.0" standalone="no"?>\r\n';
+  const svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+  const svgUrl = URL.createObjectURL(svgBlob);
+  const downloadLink = document.createElement("a");
+  downloadLink.href = svgUrl;
+  downloadLink.download = name;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
+
+svgInit();
