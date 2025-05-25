@@ -149,16 +149,6 @@ html, body {
 
 /* SVG components - keep these minimal so that all styling remains inside the svg to allow*/
 /* it to be exported without losing anything */
-/* each individual hex */
-.hex:hover {
-    opacity: 0.9;
-}
-/* the object/emoji/stamp on top of a hex */
-.hex-object {
-    pointer-events: none;
-}
-
-/* Path components - the line, the dor marks, the symbol at the end */
-.path-tip-symbol {
+.no-pointer-events {
     pointer-events: none;
 }
