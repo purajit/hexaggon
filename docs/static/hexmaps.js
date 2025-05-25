@@ -27,6 +27,7 @@ const Controls = {
   COLOR: "COLOR",
   OBJECT: "OBJECT",
   PATHTIPSYMBOL: "PATHTIPSYMBOL",
+  TEXT: "TEXT",
 }
 
 const LAYER_TOOL_COMPATIBILITY = {
@@ -42,7 +43,7 @@ const LAYER_CONTROL_COMPATIBILITY = {
   [Layers.OBJECT]: [Controls.OBJECT],
   [Layers.PATH]: [Controls.COLOR, Controls.PATHTIPSYMBOL],
   [Layers.BOUNDARY]: [Controls.COLOR],
-  [Layers.TEXT]: [Controls.COLOR],
+  [Layers.TEXT]: [Controls.COLOR, Controls.TEXT],
 };
 
 /****************
@@ -97,6 +98,9 @@ const GLOBAL_STATE = {
     TEXT: {
       primaryColor: "#b8895f",
       secondaryColor: "#7eaaad",
+      bold: false,
+      italics: false,
+      underline: false,
     }
   },
 }
@@ -113,9 +117,17 @@ const OBJECT_BUTTONS = document.querySelectorAll(".object-btn");
 const PATH_TIP_SYMBOL_BUTTONS = document.querySelectorAll(".path-tip-symbol-btn");
 const CHOSEN_PRIMARY_COLOR_DIV = document.getElementById("chosenPrimaryColor");
 const CHOSEN_SECONDARY_COLOR_DIV = document.getElementById("chosenSecondaryColor");
+const TEXT_INPUT_DIV = document.getElementById("textInput");
+const TEXT_FONT_SIZE_DIV = document.getElementById("textFontSize");
+const TEXT_BOLD_DIV = document.getElementById("textBold");
+const TEXT_ITALICS_DIV = document.getElementById("textItalics");
+const TEXT_UNDERLINE_DIV = document.getElementById("textUnderline");
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
+  if (document.activeElement.tagName == "INPUT") {
+    return;
+  }
   switch(e.code) {
   case "Digit1":
     switchToLayer(Layers.BASE);
@@ -223,6 +235,22 @@ PATH_TIP_SYMBOL_BUTTONS.forEach(btn => {
     GLOBAL_STATE.layers.PATH.currentPathTipSymbol = btn.dataset.text;
   });
 });
+
+TEXT_BOLD_DIV.addEventListener("click", (e) => {
+  TEXT_BOLD_DIV.classList.toggle("selected");
+  GLOBAL_STATE.layers.TEXT.bold = !GLOBAL_STATE.layers.TEXT.bold;
+});
+
+TEXT_ITALICS_DIV.addEventListener("click", (e) => {
+  TEXT_ITALICS_DIV.classList.toggle("selected");
+  GLOBAL_STATE.layers.TEXT.italics = !GLOBAL_STATE.layers.TEXT.italics;
+});
+
+TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
+  TEXT_UNDERLINE_DIV.classList.toggle("selected");
+  GLOBAL_STATE.layers.TEXT.underline = !GLOBAL_STATE.layers.TEXT.underline;
+});
+
 
 document.getElementById("rotateAxesBtn").addEventListener("click", (e) => {
   GLOBAL_STATE.useVerticalAxes = !GLOBAL_STATE.useVerticalAxes;
@@ -598,6 +626,32 @@ function drawPath(hexEntry) {
   SVG.appendChild(pathTip);
 }
 
+function placeTextAtPoint(pt) {
+  const textbox = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  textbox.setAttribute("font-size", TEXT_FONT_SIZE_DIV.value);
+  if (GLOBAL_STATE.layers.TEXT.bold) {
+    textbox.setAttribute("stroke-width", "0.5");
+  }
+  if (GLOBAL_STATE.layers.TEXT.italics) {
+    textbox.setAttribute("font-style", "italic");
+  }
+  if (GLOBAL_STATE.layers.TEXT.underline) {
+    textbox.setAttribute("text-decoration", "underline");
+  }
+
+  textbox.setAttribute("x", pt.x);
+  textbox.setAttribute("y", pt.y);
+  textbox.setAttribute("fill", GLOBAL_STATE.layers.TEXT.primaryColor);
+  textbox.textContent = TEXT_INPUT_DIV.value;
+  textbox.classList.add("no-pointer-events");
+  textbox.classList.add("in-image-text");
+  textbox.addEventListener("click", e => {
+    if (GLOBAL_STATE.currentTool == Tools.ERASER) SVG.removeChild(textbox);
+  });
+  SVG.appendChild(textbox);
+  makeEraseable(textbox);
+}
+
 function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
   const hexEntry = GLOBAL_STATE.hexes[`${c},${r}`];
   const {hex, x, y} = hexEntry;
@@ -636,19 +690,8 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
     }
   } else if (GLOBAL_STATE.currentLayer == Layers.TEXT) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
-      const textbox = document.createElementNS("http://www.w3.org/2000/svg", "text");
       const pt = new DOMPoint(mouseX, mouseY).matrixTransform(SVG.getScreenCTM().inverse());
-      textbox.setAttribute("x", pt.x);
-      textbox.setAttribute("y", pt.y);
-      textbox.setAttribute("fill", GLOBAL_STATE.layers.TEXT.primaryColor);
-      textbox.textContent = "Here be dragons";
-      textbox.classList.add("no-pointer-events");
-      textbox.classList.add("in-image-text");
-      textbox.addEventListener("click", e => {
-        if (GLOBAL_STATE.currentTool == Tools.ERASER) SVG.removeChild(textbox);
-      });
-      SVG.appendChild(textbox);
-      makeEraseable(textbox);
+      placeTextAtPoint(pt);
     }
   } else if (GLOBAL_STATE.currentLayer == Layers.PATH) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
@@ -743,7 +786,10 @@ function svgInit() {
  * EXTRA FUNCTIONALITIES *
  *************************/
 function saveSvg() {
-  const svgData = SVG.outerHTML;
+  const clonedSvg = SVG.cloneNode(true);
+  const bbox = SVG.getBBox();
+  clonedSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+  const svgData = clonedSvg.outerHTML;
   const preface = '<?xml version="1.0" standalone="no"?>\r\n';
   const svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
   const svgUrl = URL.createObjectURL(svgBlob);

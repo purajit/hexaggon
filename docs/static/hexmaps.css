@@ -61,6 +61,15 @@ html, body {
     height: 100vh;
 }
 
+#textFontSize {
+    width: 75px;
+    height: 50px;
+    paadding: 0;
+    margin: 0;
+    font-size: 20px;
+    text-align: right;
+}
+
 /* Composible properties */
 .hidden {
     display: none !important;
