@@ -5,6 +5,8 @@ const TOOL_PICKER_BUTTONS = document.querySelectorAll(".tool-picker-btn");
 const LAYER_CONTROLS = document.querySelectorAll(".layer-control");
 const OBJECT_BUTTONS = document.querySelectorAll(".object-btn");
 const PATH_TIP_SYMBOL_BUTTONS = document.querySelectorAll(".path-tip-symbol-btn");
+const CHOSEN_PRIMARY_COLOR_DIV = document.getElementById("chosenPrimaryColor");
+const CHOSEN_SECONDARY_COLOR_DIV = document.getElementById("chosenSecondaryColor");
 
 // Hex map setup
 const HEX_RADIUS = 35;
@@ -75,8 +77,8 @@ const GLOBAL_STATE = {
     },
 
     OBJECT: {
-      primaryObject: null,
-      secondaryObject: null,
+      primaryObject: "🌽",
+      secondaryObject: "🌊",
     },
 
     PATH: {
@@ -143,6 +145,11 @@ document.addEventListener("keyup", e => {
   if (e.code == "MetaLeft") GLOBAL_STATE.keyState.holdingMeta = false;
 });
 
+document.addEventListener("visibilitychange", () => {
+  console.log("R");
+  GLOBAL_STATE.keyState.holdingKeyZ = false;
+  GLOBAL_STATE.keyState.holdingMeta = false;
+});
 
 // Toolbar events listeners
 LAYER_PICKER_BUTTONS.forEach(layerPicker => {
@@ -256,22 +263,12 @@ function setSecondaryObject(objectText) {
 
 function setPrimaryColor(color) {
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor = color;
-  SWATCHES.forEach(b => {
-    if (b.dataset.color == color)
-      b.classList.add("primaryselected")
-    else
-      b.classList.remove("primaryselected")
-  });
+  CHOSEN_PRIMARY_COLOR_DIV.setAttribute("fill", color);
 }
 
 function setSecondaryColor(color) {
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor = color;
-  SWATCHES.forEach(b => {
-    if (b.dataset.color == color)
-      b.classList.add("secondaryselected")
-    else
-      b.classList.remove("secondaryselected")
-  });
+  CHOSEN_SECONDARY_COLOR_DIV.setAttribute("fill", color);
 }
 
 function switchToLayer(layer) {

@@ -70,7 +70,7 @@ html, body {
     border-radius: 10px 10px 10px 10px;
     overflow: hidden;
     height: fit-content;
-    border: 1px solid #ccc;
+    outline: 1px solid #ccc;
 }
 
 #toolPicker {
@@ -78,7 +78,7 @@ html, body {
     flex-direction: column;
     border-radius: 10px 10px 10px 10px;
     overflow: hidden;
-    border: 1px solid #ccc;
+    outline: 1px solid #ccc;
     width: fit-content;
     height: fit-content;
     margin-left: auto;
@@ -87,22 +87,21 @@ html, body {
 #functionalities {
     border-radius: 10px 10px 10px 10px;
     overflow: hidden;
+    outline: 1px solid #ccc;
 }
+
 /* The color palette picker */
 .swatch {
     width: 30px;
     height: 30px;
     cursor: pointer;
     box-sizing: border-box;
-    border-width: 5px;
+    border: 1px solid grey;
 }
-.primaryselected {
-    border-color: black;
-    border-style: solid;
-}
-.secondaryselected {
-    border-color: black;
-    border-style: dotted;
+#swatchesHolder {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 
 /* The object/stamp/emoji picker */
@@ -115,6 +114,8 @@ html, body {
     background: rgba(255, 255, 255);
     padding: 10px;
     border-radius: 10px 10px 10px 10px;
+    align-items: center;
+    outline: 1px solid #ccc;
 }
 .object-grid-row {
     display: flex;
@@ -125,6 +126,18 @@ html, body {
     box-sizing: border-box;
     background-size: contain;
     background-repeat: no-repeat;
+}
+.swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.primaryselected {
+    border: 5px solid black;
+}
+.secondaryselected {
+    border: 5px dotted black;
 }
 
 /* The whole entire hex map */
@@ -137,7 +150,8 @@ html, body {
 /* SVG components - keep these minimal so that all styling remains inside the svg to allow*/
 /* it to be exported without losing anything */
 /* each individual hex */
-.hex {
+.hex:hover {
+    opacity: 0.9;
 }
 /* the object/emoji/stamp on top of a hex */
 .hex-object {
