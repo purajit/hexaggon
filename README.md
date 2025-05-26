@@ -16,10 +16,3 @@ Features:
   * z + Right Click: zoom out in increments
   * Middle Click + drag: free drag
   * Cmd + Scroll: zoom
-
-Soon:
-* Export/import
-* Multiple files
-* Saving state in-browser
-* Settings menu
-* Shortcut help display
