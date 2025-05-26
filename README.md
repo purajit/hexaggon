@@ -15,4 +15,4 @@ Features:
   * Middle Click + drag:   drag
   * Cmd + Scroll: zoom
 
-Just open `index.html` to run locally!
+Just open `docs/index.html` to run locally!
