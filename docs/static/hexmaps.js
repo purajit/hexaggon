@@ -7,7 +7,7 @@ const HEX_COLS = Math.ceil(window.innerWidth / (HEX_RADIUS * 1.5));
 const HEX_ROWS = Math.ceil(window.innerHeight / (Math.sqrt(3) * HEX_RADIUS));
 
 const Layers = {
-  NONE: "NONE",
+  GRID: "GRID",
   COLOR: "COLOR",
   OBJECT: "OBJECT",
   BOUNDARY: "BOUNDARY",
@@ -32,6 +32,7 @@ const Controls = {
 }
 
 const LAYER_TOOL_COMPATIBILITY = {
+  [Layers.GRID]: [Tools.ZOOM],
   [Layers.COLOR]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
   [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
   [Layers.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
@@ -40,6 +41,7 @@ const LAYER_TOOL_COMPATIBILITY = {
 };
 
 const LAYER_CONTROL_COMPATIBILITY = {
+  [Layers.GRID]: [Controls.COLOR],
   [Layers.COLOR]: [Controls.COLOR],
   [Layers.OBJECT]: [Controls.OBJECT],
   [Layers.PATH]: [Controls.COLOR, Controls.PATHTIPSYMBOL],
@@ -62,7 +64,6 @@ const GLOBAL_STATE = {
   mouseState: {
     holdingCenterClick: false,
   },
-  canvasColor: "#c4b9a5",
 
   // active actions
   brushingActive: false,
@@ -70,6 +71,11 @@ const GLOBAL_STATE = {
   selectedElements: [],
 
   layers: {
+    GRID: {
+      primaryColor: "#c4b9a5",
+      secondaryColor: "#000000",
+    },
+
     COLOR: {
       primaryColor: "#b8895f",
       secondaryColor: "#7eaaad",
@@ -133,6 +139,9 @@ document.addEventListener("keydown", e => {
     return;
   }
   switch(e.code) {
+  case "Digit0":
+    switchToLayer(Layers.GRID);
+    break;
   case "Digit1":
     switchToLayer(Layers.COLOR);
     break;
@@ -205,17 +214,7 @@ TOOL_PICKER_BUTTONS.forEach(toolPicker => {
 SWATCHES.forEach(swatch => {
   // left click - set as primary color
   swatch.addEventListener("click", (e) => {
-    // Meta + click changes the color of the canvas - leave non-canvas-colored tiles alone!
-    if (GLOBAL_STATE.keyState.holdingMeta) {
-      const previousCanvasColor = GLOBAL_STATE.canvasColor;
-      GLOBAL_STATE.canvasColor = swatch.dataset.color;
-      Object.values(GLOBAL_STATE.hexes).forEach(hexEntry => {
-        if (hexEntry.hex.getAttribute("fill") == previousCanvasColor)
-          hexEntry.hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
-      });
-    } else {
-      setPrimaryColor(swatch.dataset.color);
-    }
+    setPrimaryColor(swatch.dataset.color);
   });
   // right click - set as secondary color
   swatch.addEventListener("contextmenu", (e) => {
@@ -357,12 +356,35 @@ function setSecondaryObject(objectText) {
   });
 }
 
+function setCanvasColor(previousCanvasColor, color) {
+  console.log(previousCanvasColor, color)
+  if (previousCanvasColor == color) {
+    return;
+  }
+  Object.values(GLOBAL_STATE.hexes).forEach(hexEntry => {
+    if (hexEntry.hex.getAttribute("fill") == previousCanvasColor)
+      hexEntry.hex.setAttribute("fill", color);
+  });
+}
+
+function setGridColor(color) {
+  Object.values(GLOBAL_STATE.hexes).forEach(hexEntry => {
+    hexEntry.hex.setAttribute("stroke", color);
+  });
+}
+
 function setPrimaryColor(color) {
+  if (GLOBAL_STATE.currentLayer == Layers.GRID) {
+    setCanvasColor(GLOBAL_STATE.layers.GRID.primaryColor, color);
+  }
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor = color;
   CHOSEN_PRIMARY_COLOR_DIV.setAttribute("fill", color);
 }
 
 function setSecondaryColor(color) {
+  if (GLOBAL_STATE.currentLayer == Layers.GRID) {
+    setGridColor(color);
+  }
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor = color;
   CHOSEN_SECONDARY_COLOR_DIV.setAttribute("fill", color);
 }
@@ -542,7 +564,7 @@ function eraseHex(c, r) {
   hexObject.setAttribute("c", c);
   hexObject.setAttribute("r", r);
   GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent = "";
-  GLOBAL_STATE.hexes[`${c},${r}`].hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
+  GLOBAL_STATE.hexes[`${c},${r}`].hex.setAttribute("fill", GLOBAL_STATE.layers.GRID.primaryColor);
 }
 
 function placeObjectOnHex(c, r) {
@@ -712,7 +734,7 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
     } else if (GLOBAL_STATE.currentTool == Tools.FILL) {
       floodFill(c, r, colorHex);
     } else if (GLOBAL_STATE.currentTool == Tools.ERASER) {
-      hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
+      hex.setAttribute("fill", GLOBAL_STATE.layers.GRID.primaryColor);
     } else if (GLOBAL_STATE.currentTool == Tools.EYEDROPPER) {
       if (GLOBAL_STATE.usingSecondary) {
         setSecondaryColor(hex.getAttribute("fill"));
@@ -768,7 +790,7 @@ function drawHex(c, r) {
   }
   const hex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
   hex.setAttribute("points", points.join(" "));
-  hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
+  hex.setAttribute("fill", GLOBAL_STATE.layers.GRID.primaryColor);
   hex.setAttribute("stroke", "black");
   hex.setAttribute("stroke-width", "5px");
   hex.setAttribute("c", c);
