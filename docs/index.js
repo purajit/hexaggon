@@ -141,8 +141,9 @@ const TEXT_FONT_SIZE_DIV = document.getElementById("textFontSize");
 const TEXT_BOLD_DIV = document.getElementById("textBold");
 const TEXT_ITALICS_DIV = document.getElementById("textItalics");
 const TEXT_UNDERLINE_DIV = document.getElementById("textUnderline");
-const HORIZONTAL_GRID_BTN = document.getElementById("horizontalGridBtn")
-const VERTICAL_GRID_BTN = document.getElementById("verticalGridBtn")
+const HORIZONTAL_GRID_BTN = document.getElementById("horizontalGridBtn");
+const VERTICAL_GRID_BTN = document.getElementById("verticalGridBtn");
+const GRID_SAMPLE_DIVS = document.querySelectorAll(".grid-sample")
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
@@ -284,16 +285,18 @@ TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
 
 HORIZONTAL_GRID_BTN.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.GRID.gridDirection = GridDirection.HORIZONTAL;
-  HORIZONTAL_GRID_BTN.classList.add("selected");
-  VERTICAL_GRID_BTN.classList.remove("selected");
+  HORIZONTAL_GRID_BTN.classList.add("primaryselected");
+  VERTICAL_GRID_BTN.classList.remove("primaryselected");
   svgInit();
+  switchToLayer(Layers.GRID);
 });
 
 VERTICAL_GRID_BTN.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.GRID.gridDirection = GridDirection.VERTICAL;
-  HORIZONTAL_GRID_BTN.classList.remove("selected");
-  VERTICAL_GRID_BTN.classList.add("selected");
+  HORIZONTAL_GRID_BTN.classList.remove("primaryselected");
+  VERTICAL_GRID_BTN.classList.add("primaryselected");
   svgInit();
+  switchToLayer(Layers.GRID);
 });
 
 document.getElementById("saveBtn").addEventListener("click", (e) => {
@@ -389,6 +392,7 @@ function setSecondaryObject(objectText) {
 
 function setCanvasColor(previousCanvasColor, color) {
   console.log(previousCanvasColor, color)
+  GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("fill", color));
   if (previousCanvasColor == color) {
     return;
   }
@@ -402,6 +406,7 @@ function setGridColor(color) {
   Object.values(GLOBAL_STATE.hexes).forEach(hexEntry => {
     hexEntry.hex.setAttribute("stroke", color);
   });
+  GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("stroke", color))
 }
 
 function setPrimaryColor(color) {
@@ -857,6 +862,8 @@ function drawHex(c, r) {
 }
 
 function svgInit() {
+  setGridColor(GLOBAL_STATE.layers.GRID.secondaryColor);
+  setCanvasColor(GLOBAL_STATE.layers.GRID.primaryColor, GLOBAL_STATE.layers.GRID.primaryColor);
   SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   for (let h in GLOBAL_STATE.hexes) delete GLOBAL_STATE.hexes[h];
   Array.prototype.slice.call(document.getElementsByTagName("polygon")).forEach(e => e.remove());
