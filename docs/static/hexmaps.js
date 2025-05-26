@@ -266,7 +266,6 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
 // mousedown is the big one that coordinates most of the page
 SVG.addEventListener("mousedown", (e) => {
   e.preventDefault();
-  console.log(e);
   if (GLOBAL_STATE.keyState.holdingKeyZ) {
     const zoomFactor = .5 * (e.button == 2 ? 1 : -1);
     zoom(zoomFactor, e.clientX, e.clientY);
@@ -286,10 +285,8 @@ SVG.addEventListener("mousedown", (e) => {
   }
 });
 SVG.addEventListener("mouseover", (e) => {
-  console.log(e);
   if (GLOBAL_STATE.brushingActive) {
     const hexAtMouse = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.classList.contains("hex"));
-    console.log(hexAtMouse);
     if (hexAtMouse) {
       handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.x, e.y, false);
     }
@@ -515,7 +512,6 @@ function floodFill(startC, startR, fn) {
   while (queue.length > 0) {
     const [c, r] = queue.shift();
     getHexNeighbors(c, r).forEach(n => {
-      console.log(n);
       const stringedCoords = `${n[0]},${n[1]}`;
       if (visited.includes(stringedCoords)) return;
       const nhexentry = GLOBAL_STATE.hexes[stringedCoords];
@@ -684,7 +680,6 @@ function drawPath(hexEntry) {
 function placeTextAtPoint(pt) {
   const textInput = TEXT_INPUT_DIV.value;
   if (!textInput) {
-    console.log("eh")
     return;
   }
   const textbox = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -713,7 +708,6 @@ function placeTextAtPoint(pt) {
 }
 
 function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
-  console.log(c, r, mouseX, mouseY, isClick);
   const hexEntry = GLOBAL_STATE.hexes[`${c},${r}`];
   const {hex, x, y} = hexEntry;
   if (GLOBAL_STATE.currentLayer == Layers.BASE) {
