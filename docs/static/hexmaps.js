@@ -8,7 +8,7 @@ const HEX_ROWS = Math.ceil(window.innerHeight / (Math.sqrt(3) * HEX_RADIUS));
 
 const Layers = {
   NONE: "NONE",
-  BASE: "BASE",
+  COLOR: "COLOR",
   OBJECT: "OBJECT",
   BOUNDARY: "BOUNDARY",
   PATH: "PATH",
@@ -32,7 +32,7 @@ const Controls = {
 }
 
 const LAYER_TOOL_COMPATIBILITY = {
-  [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
+  [Layers.COLOR]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
   [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
   [Layers.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
   [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
@@ -40,7 +40,7 @@ const LAYER_TOOL_COMPATIBILITY = {
 };
 
 const LAYER_CONTROL_COMPATIBILITY = {
-  [Layers.BASE]: [Controls.COLOR],
+  [Layers.COLOR]: [Controls.COLOR],
   [Layers.OBJECT]: [Controls.OBJECT],
   [Layers.PATH]: [Controls.COLOR, Controls.PATHTIPSYMBOL],
   [Layers.BOUNDARY]: [Controls.COLOR],
@@ -54,7 +54,7 @@ const GLOBAL_STATE = {
   // whether the use vertical-oriented axes (hexagon pointy up and down)
   useVerticalAxes: false,
   hexes: {},
-  currentLayer: Layers.BASE,
+  currentLayer: Layers.COLOR,
   currentTool: Tools.BRUSH,
   keyState: {
     holdingMeta: false,
@@ -70,7 +70,7 @@ const GLOBAL_STATE = {
   selectedElements: [],
 
   layers: {
-    BASE: {
+    COLOR: {
       primaryColor: "#b8895f",
       secondaryColor: "#7eaaad",
     },
@@ -134,7 +134,7 @@ document.addEventListener("keydown", e => {
   }
   switch(e.code) {
   case "Digit1":
-    switchToLayer(Layers.BASE);
+    switchToLayer(Layers.COLOR);
     break;
   case "Digit2":
     switchToLayer(Layers.OBJECT);
@@ -508,7 +508,7 @@ function makeEraseable(...elements) {
 }
 
 function colorHex(c, r) {
-  const fillColor = GLOBAL_STATE.usingSecondary ? GLOBAL_STATE.layers.BASE.secondaryColor : GLOBAL_STATE.layers.BASE.primaryColor;
+  const fillColor = GLOBAL_STATE.usingSecondary ? GLOBAL_STATE.layers.COLOR.secondaryColor : GLOBAL_STATE.layers.COLOR.primaryColor;
   GLOBAL_STATE.hexes[`${c},${r}`].hex.setAttribute("fill", fillColor);
   // easy way to test hex neighbor logic
   // getHexNeighbors(c, r).forEach(h => {
@@ -706,7 +706,7 @@ function placeTextAtPoint(pt) {
 function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
   const hexEntry = GLOBAL_STATE.hexes[`${c},${r}`];
   const {hex, x, y} = hexEntry;
-  if (GLOBAL_STATE.currentLayer == Layers.BASE) {
+  if (GLOBAL_STATE.currentLayer == Layers.COLOR) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       colorHex(c, r);
     } else if (GLOBAL_STATE.currentTool == Tools.FILL) {
@@ -802,7 +802,7 @@ function svgInit() {
       drawHex(c, r);
     }
   }
-  switchToLayer(Layers.BASE);
+  switchToLayer(Layers.COLOR);
   // smolbean grid for inspection ease
   // for (let c = 3; c < 13; c++) {
   //   for (let r = 3; r < 13; r++) {
