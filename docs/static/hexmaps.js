@@ -68,6 +68,10 @@ const GLOBAL_STATE = {
   mouseState: {
     holdingCenterClick: false,
   },
+  temporaryMode: {
+    previousTool: Tools.BRUSH,
+    active: false,
+  },
 
   // active actions
   brushingActive: false,
@@ -142,6 +146,7 @@ const VERTICAL_GRID_BTN = document.getElementById("verticalGridBtn")
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
+  console.log(e)
   if (document.activeElement.tagName == "INPUT") {
     return;
   }
@@ -182,6 +187,12 @@ document.addEventListener("keydown", e => {
   case "KeyZ":
     switchToTool(Tools.ZOOM);
     break;
+  case "AltLeft":
+  case "AltRight":
+    if (LAYER_TOOL_COMPATIBILITY[GLOBAL_STATE.currentLayer].includes(Tools.EYEDROPPER)) {
+      switchToTool(Tools.EYEDROPPER, true);
+    }
+    break;
   case "MetaLeft":
   case "MetaRight":
     GLOBAL_STATE.keyState.holdingMeta = true;
@@ -191,18 +202,22 @@ document.addEventListener("keydown", e => {
 
 document.addEventListener("keyup", e => {
   if (e.code == "MetaLeft" || e.code == "MetaRight") GLOBAL_STATE.keyState.holdingMeta = false;
+  if (e.code == "AltLeft" || e.code == "AltRight") dropTemporaryModes();
 });
 
 // when window loses focus, reset - otherwise, Cmd+Tab to change windows
 // will continue having holdingMeta after coming back
 document.addEventListener("blur", e => {
+  GLOBAL_STATE.keyState.holdingAlt = false;
   GLOBAL_STATE.keyState.holdingMeta = false;
   GLOBAL_STATE.mouseState.holdingCenterClick = false;
+  dropTemporaryModes();
   stopFreeDragging();
 });
 
 document.addEventListener("mouseleave", e => {
   GLOBAL_STATE.mouseState.holdingCenterClick = false;
+  dropTemporaryModes();
   stopFreeDragging();
 });
 
@@ -440,10 +455,21 @@ function switchToCursor(name) {
   SVG.classList.add(`${name.toLowerCase()}cursor`);
 }
 
-function switchToTool(tool) {
+function dropTemporaryModes() {
+  GLOBAL_STATE.temporaryMode.active = false;
+  switchToTool(GLOBAL_STATE.temporaryMode.previousTool);
+}
+
+function switchToTool(tool, temporarily=false) {
   if (!LAYER_TOOL_COMPATIBILITY[GLOBAL_STATE.currentLayer].includes(tool)) {
     return;
   }
+
+  if (temporarily) {
+    GLOBAL_STATE.temporaryMode.previousTool = GLOBAL_STATE.currentTool;
+    GLOBAL_STATE.temporaryMode.active = true;
+  }
+
   switchToCursor(tool);
   TOOL_PICKER_BUTTONS.forEach(b => {
     if (b.dataset.tool == tool) {
