@@ -137,6 +137,8 @@ const TEXT_FONT_SIZE_DIV = document.getElementById("textFontSize");
 const TEXT_BOLD_DIV = document.getElementById("textBold");
 const TEXT_ITALICS_DIV = document.getElementById("textItalics");
 const TEXT_UNDERLINE_DIV = document.getElementById("textUnderline");
+const HORIZONTAL_GRID_BTN = document.getElementById("horizontalGridBtn")
+const VERTICAL_GRID_BTN = document.getElementById("verticalGridBtn")
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
@@ -265,13 +267,17 @@ TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.TEXT.underline = !GLOBAL_STATE.layers.TEXT.underline;
 });
 
-document.getElementById("horizontalGridBtn").addEventListener("click", (e) => {
+HORIZONTAL_GRID_BTN.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.GRID.gridDirection = GridDirection.HORIZONTAL;
+  HORIZONTAL_GRID_BTN.classList.add("selected");
+  VERTICAL_GRID_BTN.classList.remove("selected");
   svgInit();
 });
 
-document.getElementById("verticalGridBtn").addEventListener("click", (e) => {
+VERTICAL_GRID_BTN.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.GRID.gridDirection = GridDirection.VERTICAL;
+  HORIZONTAL_GRID_BTN.classList.remove("selected");
+  VERTICAL_GRID_BTN.classList.add("selected");
   svgInit();
 });
 
