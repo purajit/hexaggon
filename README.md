@@ -15,4 +15,4 @@ Features:
   * Middle Click + drag:   drag
   * Cmd + Scroll: zoom
 
-Use `docker run  -it --rm -d -p 8040:80 --name hexaggon.com -v ./docs:/usr/share/nginx/html nginx:1.22-alpine` to run in locally on `localhost:8040`
+Just open `index.html` to run locally!
