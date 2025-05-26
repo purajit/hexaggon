@@ -21,6 +21,7 @@ const Tools = {
   FILL: "FILL",
   EYEDROPPER: "EYEDROPPER",
   ERASER: "ERASER",
+  ZOOM: "ZOOM",
 };
 
 const Controls = {
@@ -31,11 +32,11 @@ const Controls = {
 }
 
 const LAYER_TOOL_COMPATIBILITY = {
-  [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER],
-  [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER],
-  [Layers.PATH]: [Tools.BRUSH, Tools.SELECT],
-  [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER],
-  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT],
+  [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
+  [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
+  [Layers.PATH]: [Tools.BRUSH, Tools.SELECT, Tools.ZOOM],
+  [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
+  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOMx],
 };
 
 const LAYER_CONTROL_COMPATIBILITY = {
@@ -56,13 +57,14 @@ const GLOBAL_STATE = {
   currentLayer: Layers.BASE,
   currentTool: Tools.BRUSH,
   keyState: {
-    holdingKeyZ: false,
     holdingMeta: false,
+  },
+  mouseState: {
+    holdingCenterClick: false,
   },
   canvasColor: "#c4b9a5",
 
   // active actions
-  freeDragging: false,
   brushingActive: false,
   usingSecondary: false,
   selectedElements: [],
@@ -161,7 +163,7 @@ document.addEventListener("keydown", e => {
     switchToTool(Tools.SELECT);
     break;
   case "KeyZ":
-    GLOBAL_STATE.keyState.holdingKeyZ = true;
+    switchToTool(Tools.ZOOM);
     break;
   case "MetaLeft":
     GLOBAL_STATE.keyState.holdingMeta = true;
@@ -170,15 +172,20 @@ document.addEventListener("keydown", e => {
 });
 
 document.addEventListener("keyup", e => {
-  if (e.code == "KeyZ") GLOBAL_STATE.keyState.holdingKeyZ = false;
   if (e.code == "MetaLeft") GLOBAL_STATE.keyState.holdingMeta = false;
 });
 
 // when window loses focus, reset - otherwise, Cmd+Tab to change windows
 // will continue having holdingMeta after coming back
 document.addEventListener("blur", e => {
-  GLOBAL_STATE.keyState.holdingKeyZ = false;
   GLOBAL_STATE.keyState.holdingMeta = false;
+  GLOBAL_STATE.mouseState.holdingCenterClick = false;
+  stopFreeDragging();
+});
+
+document.addEventListener("mouseleave", e => {
+  GLOBAL_STATE.mouseState.holdingCenterClick = false;
+  stopFreeDragging();
 });
 
 LAYER_PICKER_BUTTONS.forEach(layerPicker => {
@@ -252,7 +259,6 @@ TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.TEXT.underline = !GLOBAL_STATE.layers.TEXT.underline;
 });
 
-
 document.getElementById("rotateAxesBtn").addEventListener("click", (e) => {
   GLOBAL_STATE.useVerticalAxes = !GLOBAL_STATE.useVerticalAxes;
   svgInit();
@@ -266,7 +272,7 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
 // mousedown is the big one that coordinates most of the page
 SVG.addEventListener("mousedown", (e) => {
   e.preventDefault();
-  if (GLOBAL_STATE.keyState.holdingKeyZ) {
+  if (GLOBAL_STATE.currentTool == Tools.ZOOM) {
     const zoomFactor = .5 * (e.button == 2 ? 1 : -1);
     zoom(zoomFactor, e.clientX, e.clientY);
     return;
@@ -279,7 +285,7 @@ SVG.addEventListener("mousedown", (e) => {
       handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.clientX, e.clientY, true);
     }
   } else if (e.buttons == 4) {
-    GLOBAL_STATE.freeDragging = true;
+    GLOBAL_STATE.mouseState.holdingCenterClick = true;
     SVG.addEventListener("mousemove", freeDragScroll);
     switchToCursor("move");
   }
@@ -296,13 +302,12 @@ SVG.addEventListener("mouseup", () => {
   if (GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint) {
     SVG.removeEventListener("mousemove", drawBoundary);
   }
-  if (GLOBAL_STATE.freeDragging) {
-    SVG.removeEventListener("mousemove", freeDragScroll);
-    switchToCursor(GLOBAL_STATE.currentTool);
+  if (GLOBAL_STATE.mouseState.holdingCenterClick) {
+    stopFreeDragging();
   }
   GLOBAL_STATE.brushingActive = false;
   GLOBAL_STATE.layers.PATH.activePath = null;
-  GLOBAL_STATE.freeDragging = false;
+  GLOBAL_STATE.mouseState.holdingCenterClick = false;
   GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = null;
 });
 
@@ -318,10 +323,14 @@ SVG.addEventListener("wheel", e => {
   }
 });
 
-
 /*********************************
  * INTERACTING WITH GLOBAL STATE *
  *********************************/
+function stopFreeDragging() {
+  SVG.removeEventListener("mousemove", freeDragScroll);
+  switchToCursor(GLOBAL_STATE.currentTool);
+}
+
 function setPrimaryObject(objectText) {
   GLOBAL_STATE.layers.OBJECT.primaryObject = objectText;
   OBJECT_BUTTONS.forEach(b => {
@@ -623,6 +632,7 @@ function drawPath(hexEntry) {
       pathLineHighlightPoints.removeItem(pathLinePoints.length - 1);
       pathLinePoints.removeItem(pathLinePoints.length - 1);
     } else {
+      // TODO: if an edge exists, don't allow drawing
       const p = SVG.createSVGPoint();
       p.x = hexEntry.x; p.y = hexEntry.y;
       GLOBAL_STATE.layers.PATH.activePath.line.points.appendItem(p);
