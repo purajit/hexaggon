@@ -5,6 +5,7 @@ html, body {
     padding: 0;
     background-image: url("tiledspace.jpg");
     background-repeat: repeat;
+    overflow: hidden;
 }
 
 .brushcursor {
@@ -45,6 +46,7 @@ html, body {
 .toolbar {
     padding: 1rem;
     position: absolute;
+    overflow: scroll;
 }
 
 .control-panel {
@@ -77,6 +79,12 @@ html, body {
 /* Composible properties */
 .hidden {
     display: none !important;
+}
+
+.disabled-btn {
+    cursor: default !important;
+    filter: saturate(0%);
+    background: #ccc;
 }
 
 .flex-row {
@@ -117,12 +125,13 @@ html, body {
 .overlaid {
     border-radius: 10px 10px 10px 10px;
     overflow: hidden;
-    outline: 1px solid #ccc;
     height: fit-content;
     width: fit-content;
     background: rgba(255, 255, 255);
     align-items: center;
+    box-shadow: 0 0 1px 1px #ccc;
 }
+
 
 .right-aligned {
     right: 0%;
