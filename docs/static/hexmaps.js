@@ -34,9 +34,9 @@ const Controls = {
 const LAYER_TOOL_COMPATIBILITY = {
   [Layers.BASE]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
   [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
-  [Layers.PATH]: [Tools.BRUSH, Tools.SELECT, Tools.ZOOM],
+  [Layers.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
   [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
-  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOMx],
+  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
 };
 
 const LAYER_CONTROL_COMPATIBILITY = {
@@ -84,10 +84,11 @@ const GLOBAL_STATE = {
     PATH: {
       primaryColor: "#000000",
       secondaryColor: "#ffffff",
-      currentPathTipSymbol: "⚓",
+      currentPathTipSymbol: "",
       // each path has line, lineHighlight, pathTip
       paths: [],
       activePath: null,
+      lastHexEntry: null,
     },
 
     BOUNDARY: {
@@ -166,13 +167,14 @@ document.addEventListener("keydown", e => {
     switchToTool(Tools.ZOOM);
     break;
   case "MetaLeft":
+  case "MetaRight":
     GLOBAL_STATE.keyState.holdingMeta = true;
     break;
   }
 });
 
 document.addEventListener("keyup", e => {
-  if (e.code == "MetaLeft") GLOBAL_STATE.keyState.holdingMeta = false;
+  if (e.code == "MetaLeft" || e.code == "MetaRight") GLOBAL_STATE.keyState.holdingMeta = false;
 });
 
 // when window loses focus, reset - otherwise, Cmd+Tab to change windows
@@ -306,9 +308,11 @@ SVG.addEventListener("mouseup", () => {
     stopFreeDragging();
   }
   GLOBAL_STATE.brushingActive = false;
-  GLOBAL_STATE.layers.PATH.activePath = null;
   GLOBAL_STATE.mouseState.holdingCenterClick = false;
   GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = null;
+  GLOBAL_STATE.layers.BOUNDARY.lastHexEntry = null;
+  GLOBAL_STATE.layers.PATH.activePath = null;
+  GLOBAL_STATE.layers.PATH.lastHexEntry = null;
 });
 
 SVG.addEventListener("contextmenu", e => e.preventDefault());
@@ -428,7 +432,7 @@ function switchToTool(tool) {
  * SVG UTILS *
  *************/
 function freeDragScroll(e) {
-  scroll(e.movementX, e.movementY);
+  scroll(-e.movementX, -e.movementY);
 }
 
 function scroll(xdiff, ydiff) {
@@ -496,11 +500,11 @@ function getHexNeighbors(_c, _r) {
   ];
 }
 
-function makeEraseable(element) {
+function makeEraseable(...elements) {
   const expectedLayer = GLOBAL_STATE.currentLayer;
-  element.addEventListener("mouseover", e => {
-    if (GLOBAL_STATE.currentLayer == expectedLayer && GLOBAL_STATE.currentTool == Tools.ERASER && GLOBAL_STATE.brushingActive) SVG.removeChild(element);
-  });
+  elements.forEach(el => el.addEventListener("mouseover", e => {
+    if (GLOBAL_STATE.currentLayer == expectedLayer && GLOBAL_STATE.currentTool == Tools.ERASER && GLOBAL_STATE.brushingActive) elements.forEach(el => SVG.removeChild(el));
+  }));
 }
 
 function colorHex(c, r) {
@@ -621,70 +625,52 @@ function isEqualWithinTolerance(x1, x2) {
   return Math.abs(x1 - x2) <= 0.1;
 }
 
-function drawPath(hexEntry) {
-  if (GLOBAL_STATE.layers.PATH.activePath != null) {
-    const pathLinePoints = GLOBAL_STATE.layers.PATH.activePath.line.points;
-    if (isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 1].x, hexEntry.x) && isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 1].y, hexEntry.y)) {
-      return;
-    }
-    if (pathLinePoints.length > 1 && isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 2].x, hexEntry.x) && isEqualWithinTolerance(pathLinePoints[pathLinePoints.length - 2].y, hexEntry.y)) {
-      const pathLineHighlightPoints = GLOBAL_STATE.layers.PATH.activePath.lineHighlight.points;
-      pathLineHighlightPoints.removeItem(pathLinePoints.length - 1);
-      pathLinePoints.removeItem(pathLinePoints.length - 1);
-    } else {
-      // TODO: if an edge exists, don't allow drawing
-      const p = SVG.createSVGPoint();
-      p.x = hexEntry.x; p.y = hexEntry.y;
-      GLOBAL_STATE.layers.PATH.activePath.line.points.appendItem(p);
-      GLOBAL_STATE.layers.PATH.activePath.lineHighlight.points.appendItem(p);
-    }
+function arePointsEqual(p1, p2) {
+  return isEqualWithinTolerance(p1.x, p2.x) && isEqualWithinTolerance(p1.y, p2.y)
+}
 
-    GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("x", hexEntry.x);
-    GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("y", hexEntry.y);
-    GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("c", hexEntry.c);
-    GLOBAL_STATE.layers.PATH.activePath.pathTip.setAttribute("r", hexEntry.r);
+function drawPath(hexEntry) {
+  if (!GLOBAL_STATE.layers.PATH.lastHexEntry) {
+    GLOBAL_STATE.layers.PATH.lastHexEntry = hexEntry;
     return;
   }
 
-  // create a new path
-  const pathTip = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  pathTip.setAttribute("x", hexEntry.x);
-  pathTip.setAttribute("y", hexEntry.y);
-  pathTip.setAttribute("c", hexEntry.c);
-  pathTip.setAttribute("r", hexEntry.r);
-  pathTip.setAttribute("font-size", "30px");
-  pathTip.setAttribute("text-anchor", "middle");
-  pathTip.setAttribute("dominant-baseline", "central");
-  pathTip.textContent = GLOBAL_STATE.layers.PATH.currentPathTipSymbol;
-  pathTip.classList.add("no-pointer-events");
+  const lastHexEntry = GLOBAL_STATE.layers.PATH.lastHexEntry;
 
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-  const lineHighlight = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-  const p = SVG.createSVGPoint();
-  p.x = hexEntry.x; p.y = hexEntry.y;
+  if (arePointsEqual(lastHexEntry, hexEntry)) {
+    return;
+  }
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
   line.setAttribute("fill", "none");
   line.setAttribute("stroke", GLOBAL_STATE.layers.PATH.primaryColor);
   line.setAttribute("stroke-dasharray", 10);
   line.setAttribute("stroke-linecap", "round");
-  lineHighlight.setAttribute("stroke-linejoin", "round");
+  line.setAttribute("stroke-linejoin", "round");
   line.setAttribute("stroke-width", 3);
-  line.points.initialize(p);
-  line.classList.add("no-pointer-events");
+  line.setAttribute("x1", lastHexEntry.x);
+  line.setAttribute("y1", lastHexEntry.y);
+  line.setAttribute("x2", hexEntry.x);
+  line.setAttribute("y2", hexEntry.y);
+  // line.classList.add("no-pointer-events");
+
+  const lineHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
   lineHighlight.setAttribute("fill", "none");
   lineHighlight.setAttribute("stroke", GLOBAL_STATE.layers.PATH.secondaryColor);
   lineHighlight.setAttribute("stroke-linecap", "round");
   lineHighlight.setAttribute("stroke-linejoin", "round");
   lineHighlight.setAttribute("stroke-width", 7);
   lineHighlight.setAttribute("stroke-opacity", 0.5);
-  lineHighlight.points.initialize(p);
-  lineHighlight.classList.add("no-pointer-events");
+  lineHighlight.setAttribute("x1", lastHexEntry.x);
+  lineHighlight.setAttribute("y1", lastHexEntry.y);
+  lineHighlight.setAttribute("x2", hexEntry.x);
+  lineHighlight.setAttribute("y2", hexEntry.y);
+  // lineHighlight.classList.add("no-pointer-events");
 
-  const path = {line, lineHighlight, pathTip};
-  GLOBAL_STATE.layers.PATH.paths.push(path);
-  GLOBAL_STATE.layers.PATH.activePath = path;
+  GLOBAL_STATE.layers.PATH.lastHexEntry = hexEntry;
+  makeEraseable(line, lineHighlight);
   SVG.appendChild(lineHighlight);
   SVG.appendChild(line);
-  SVG.appendChild(pathTip);
 }
 
 function placeTextAtPoint(pt) {
@@ -760,11 +746,6 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
     }
   } else if (GLOBAL_STATE.currentLayer == Layers.PATH) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
-      if (isClick) {
-        GLOBAL_STATE.layers.PATH.activePath = GLOBAL_STATE.layers.PATH.paths.find(
-          p => p.pathTip.getAttribute("c") == c && p.pathTip.getAttribute("r") == r
-        );
-      }
       drawPath(hexEntry);
     }
   }
