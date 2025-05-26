@@ -59,12 +59,13 @@ const GLOBAL_STATE = {
     holdingKeyZ: false,
     holdingMeta: false,
   },
-  selectedElements: [],
   canvasColor: "#c4b9a5",
 
-  // brushing metadata/status
+  // active actions
+  freeDragging: false,
   brushingActive: false,
   usingSecondary: false,
+  selectedElements: [],
 
   layers: {
     BASE: {
@@ -175,7 +176,7 @@ document.addEventListener("keyup", e => {
 
 // when window loses focus, reset - otherwise, Cmd+Tab to change windows
 // will continue having holdingMeta after coming back
-document.addEventListener("blur", () => {
+document.addEventListener("blur", e => {
   GLOBAL_STATE.keyState.holdingKeyZ = false;
   GLOBAL_STATE.keyState.holdingMeta = false;
 });
@@ -262,11 +263,50 @@ document.getElementById("saveBtn").addEventListener("click", (e) => {
 });
 
 // SVG events listeners
+// mousedown is the big one that coordinates most of the page
+SVG.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  console.log(e);
+  if (GLOBAL_STATE.keyState.holdingKeyZ) {
+    const zoomFactor = .5 * (e.button == 2 ? 1 : -1);
+    zoom(zoomFactor, e.clientX, e.clientY);
+    return;
+  } else if (e.buttons < 3) { // single left/right click
+    GLOBAL_STATE.brushingActive = true;
+    // a right mouse down means paint with secondary colors
+    GLOBAL_STATE.usingSecondary = (e.button == 2);
+    const hexAtMouse = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.classList.contains("hex"));
+    if (hexAtMouse) {
+      handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.clientX, e.clientY, true);
+    }
+  } else if (e.buttons == 4) {
+    GLOBAL_STATE.freeDragging = true;
+    SVG.addEventListener("mousemove", freeDragScroll);
+    switchToCursor("move");
+  }
+});
+SVG.addEventListener("mouseover", (e) => {
+  console.log(e);
+  if (GLOBAL_STATE.brushingActive) {
+    const hexAtMouse = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.classList.contains("hex"));
+    console.log(hexAtMouse);
+    if (hexAtMouse) {
+      handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.x, e.y, false);
+    }
+  }
+});
 SVG.addEventListener("mouseup", () => {
+  if (GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint) {
+    SVG.removeEventListener("mousemove", drawBoundary);
+  }
+  if (GLOBAL_STATE.freeDragging) {
+    SVG.removeEventListener("mousemove", freeDragScroll);
+    switchToCursor(GLOBAL_STATE.currentTool);
+  }
   GLOBAL_STATE.brushingActive = false;
   GLOBAL_STATE.layers.PATH.activePath = null;
+  GLOBAL_STATE.freeDragging = false;
   GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = null;
-  SVG.removeEventListener("mousemove", drawBoundary);
 });
 
 SVG.addEventListener("contextmenu", e => e.preventDefault());
@@ -280,6 +320,7 @@ SVG.addEventListener("wheel", e => {
     scroll(e.deltaX, e.deltaY);
   }
 });
+
 
 /*********************************
  * INTERACTING WITH GLOBAL STATE *
@@ -345,12 +386,17 @@ function switchToLayer(layer) {
   setSecondaryColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor);
 }
 
+function switchToCursor(name) {
+  Object.keys(Tools).forEach(t => SVG.classList.remove(`${t.toLowerCase()}cursor`));
+  SVG.classList.remove("movecursor");
+  SVG.classList.add(`${name.toLowerCase()}cursor`);
+}
+
 function switchToTool(tool) {
   if (!LAYER_TOOL_COMPATIBILITY[GLOBAL_STATE.currentLayer].includes(tool)) {
     return;
   }
-  Object.keys(Tools).forEach(t => SVG.classList.remove(`${t.toLowerCase()}cursor`));
-  SVG.classList.add(`${tool.toLowerCase()}cursor`);
+  switchToCursor(tool);
   TOOL_PICKER_BUTTONS.forEach(b => {
     if (b.dataset.tool == tool) {
       b.classList.add("selected")
@@ -375,6 +421,10 @@ function switchToTool(tool) {
 /*************
  * SVG UTILS *
  *************/
+function freeDragScroll(e) {
+  scroll(e.movementX, e.movementY);
+}
+
 function scroll(xdiff, ydiff) {
   const viewBox = SVG.getAttribute("viewBox") || `0 0 ${window.innerWidth} ${window.innerHeight}`;
   const [x, y, width, height] = viewBox.split(" ").map(Number);
@@ -409,7 +459,9 @@ function hexIndexToPixel(c, r) {
   return {x, y};
 }
 
-function getHexNeighbors(c, r) {
+function getHexNeighbors(_c, _r) {
+  const c = parseInt(_c);
+  const r = parseInt(_r);
   if (GLOBAL_STATE.useVerticalAxes) {
     const offset = (r % 2 == 0) ? -1 : 1;
     return [
@@ -463,6 +515,7 @@ function floodFill(startC, startR, fn) {
   while (queue.length > 0) {
     const [c, r] = queue.shift();
     getHexNeighbors(c, r).forEach(n => {
+      console.log(n);
       const stringedCoords = `${n[0]},${n[1]}`;
       if (visited.includes(stringedCoords)) return;
       const nhexentry = GLOBAL_STATE.hexes[stringedCoords];
@@ -477,6 +530,8 @@ function floodFill(startC, startR, fn) {
 }
 
 function eraseHex(c, r) {
+  hexObject.setAttribute("c", c);
+  hexObject.setAttribute("r", r);
   GLOBAL_STATE.layers.OBJECT.objectsOnHexes[`${c},${r}`].textContent = "";
   GLOBAL_STATE.hexes[`${c},${r}`].hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
 }
@@ -658,6 +713,7 @@ function placeTextAtPoint(pt) {
 }
 
 function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
+  console.log(c, r, mouseX, mouseY, isClick);
   const hexEntry = GLOBAL_STATE.hexes[`${c},${r}`];
   const {hex, x, y} = hexEntry;
   if (GLOBAL_STATE.currentLayer == Layers.BASE) {
@@ -730,26 +786,9 @@ function drawHex(c, r) {
   hex.setAttribute("fill", GLOBAL_STATE.canvasColor);
   hex.setAttribute("stroke", "black");
   hex.setAttribute("stroke-width", "5px");
+  hex.setAttribute("c", c);
+  hex.setAttribute("r", r);
   hex.classList.add("hex");
-
-  hex.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-
-    if (GLOBAL_STATE.keyState.holdingKeyZ) {
-      const zoomFactor = .5 * (e.button == 2 ? 1 : -1);
-      zoom(zoomFactor, e.clientX, e.clientY);
-      return;
-    }
-    GLOBAL_STATE.brushingActive = true;
-    // a right mouse down means paint with secondary colors
-    GLOBAL_STATE.usingSecondary = (e.button == 2);
-    handleHexInteraction(c, r, e.x, e.y, true);
-  });
-  hex.addEventListener("mouseover", (e) => {
-    if (GLOBAL_STATE.brushingActive) {
-      handleHexInteraction(c, r, e.x, e.y, false);
-    }
-  });
 
   const hexObject = document.createElementNS("http://www.w3.org/2000/svg", "text");
   hexObject.setAttribute("x", x);
