@@ -7,14 +7,12 @@ A simple, beautiful, fully static hex map editor. No servers, no server-side sta
 Features:
 * Primary/secondary colors accessible via left/right click (in all cases - selecting colors from a palette, brushing, filling, using the eyedropper)
 * 5 layers - Base, Object (currently, emojis, soon - svgs!), Path, Boundary, Text
-* 5 modes depending on the layer - Select, Brush, Fill, Eyedropper, Erase
+* 5 tools depending on the layer - Select, Brush, Fill, Eyedropper, Erase, Zoom
 * Saving as an svg
 * Shortcuts for all modes and layers!
 * More mouse shortcuts:
   * Cmd + Left Click: change the color of the canvas
-  * z + Left Click: zoom in in increments
-  * z + Right Click: zoom out in increments
-  * Middle Click + drag: free drag
+  * Middle Click + drag:   drag
   * Cmd + Scroll: zoom
 
 Use `docker run  -it --rm -d -p 8040:80 --name hexaggon.com -v ./docs:/usr/share/nginx/html nginx:1.22-alpine` to run in locally on `localhost:8040`
