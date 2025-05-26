@@ -21,3 +21,5 @@ Soon:
 * Export/import
 * Multiple files
 * Saving state in-browser
+* Settings menu
+* Shortcut help display
