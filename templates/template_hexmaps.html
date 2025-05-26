@@ -6,27 +6,63 @@
   <link rel="stylesheet" href="/static/hexmaps.css">
 </head>
 <body>
-  <div class="toolbar flex-column gappy">
-    <div id="layerPicker" class="flex-column overlaid">
-      <button class="layer-picker-btn btn" title="Base layer (1)" data-layer="BASE">🌐️</button>
-      <button class="layer-picker-btn btn" title="Object layer (2)" data-layer="OBJECT">🖇</button>
-      <button class="layer-picker-btn btn" title="Path layer (3)" data-layer="PATH">🗺️</button>
-      <button class="layer-picker-btn btn" title="Boundary layer (4)" data-layer="BOUNDARY">〰</button>
-      <button class="layer-picker-btn btn" title="Text layer (5)" data-layer="TEXT">📝</button>
+  <div class="toolbar flex-row gappy">
+    <div class="flex-column gappy">
+      <div id="layerPicker" class="flex-column overlaid">
+        <button class="layer-picker-btn btn" title="Base layer (1)" data-layer="BASE">🌐️</button>
+        <button class="layer-picker-btn btn" title="Object layer (2)" data-layer="OBJECT">🖇</button>
+        <button class="layer-picker-btn btn" title="Path layer (3)" data-layer="PATH">🗺️</button>
+        <button class="layer-picker-btn btn" title="Boundary layer (4)" data-layer="BOUNDARY">〰</button>
+        <button class="layer-picker-btn btn" title="Text layer (5)" data-layer="TEXT">📝</button>
+      </div>
+      <div id="toolPicker" class="flex-column overlaid">
+        <button class="tool-picker-btn btn" title="Select tool (M)" data-tool="SELECT">⊹</button>
+        <button class="tool-picker-btn btn" title="Brush tool (B)" data-tool="BRUSH">🖌</button>
+        <button class="tool-picker-btn btn" title="Fill tool (G)" data-tool="FILL">🪣</button>
+        <button class="tool-picker-btn btn" title="Eyedropper tool (I)" data-tool="EYEDROPPER">️💧</button>
+        <button class="tool-picker-btn btn" title="Eraser tool (E)" data-tool="ERASER">️🧻</button>
+      </div>
+      <div class="overlaid">
+        <button id="saveBtn" class="btn" title="Save map! (For personal appreciation, not for export/import - yet)">💾</button>
+        <button id="rotateAxesBtn" class="btn" title="Flip axes (WILL NOT PRESERVE DRAWING!)">↻</button>
+      </div>
     </div>
-    <div id="toolPicker" class="flex-column overlaid">
-      <button class="tool-picker-btn btn" title="Select tool (M)" data-tool="SELECT">⊹</button>
-      <button class="tool-picker-btn btn" title="Brush tool (B)" data-tool="BRUSH">🖌</button>
-      <button class="tool-picker-btn btn" title="Fill tool (G)" data-tool="FILL">🪣</button>
-      <button class="tool-picker-btn btn" title="Eyedropper tool (I)" data-tool="EYEDROPPER">️💧</button>
-      <button class="tool-picker-btn btn" title="Eraser tool (E)" data-tool="ERASER">️🧻</button>
+    <div class="layer-control control-panel flex-column gappy overlaid" data-control="COLOR">
+      <svg xmlns='http://www.w3.org/2000/svg'  width='45' height='45' viewport='0 0 45 45'>
+        <rect id="chosenSecondaryColor" x="0" y="0" width="30" height="30" fill="#7eaaad" stroke="grey"/>
+        <rect id="chosenPrimaryColor" x="15" y="15" width="30" height="30" fill="#b8895f" stroke="grey"/>
+      </svg>
+      <div class="flex-row gappy">
+        <div class="flex-column gappy">
+          <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
+          <!-- blues -->
+          <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
+          <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
+          <!-- greens -->
+          <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
+          <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
+          <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
+          <!-- browns oranges -->
+          <div class="swatch" style="background:#943636" data-color="#943636"></div>
+          <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
+          <div class="swatch" style="background:#908a07" data-color="#908a07"></div>
+          <div class="swatch" style="background:#574d39" data-color="#574d39"></div>
+          <div class="swatch" style="background:#000000" data-color="#000000"></div>
+        </div>
+        <div class="flex-column gappy">
+          <div class="swatch" style="background:#535272" data-color="#535272"></div>
+          <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
+          <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
+          <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
+          <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
+          <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
+          <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
+          <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
+          <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
+          <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
+        </div>
+      </div>
     </div>
-    <div class="overlaid">
-      <button id="saveBtn" class="btn" title="Save map! (For personal appreciation, not for export/import - yet)">💾</button>
-      <button id="rotateAxesBtn" class="btn" title="Flip axes (WILL NOT PRESERVE DRAWING!)">↻</button>
-    </div>
-  </div>
-  <div class="toolbar right-aligned flex-row gappy">
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="OBJECT">
       <div class="flex-row gappy">
         <div class="object-btn btn border-box" data-text="🌲">🌲</div>
@@ -97,42 +133,6 @@
         <div id="textUnderline" class="btn border-box">U</div>
       </div>
       <input id="textInput" placeholder="Text to insert"></input>
-    </div>
-    <div class="layer-control control-panel flex-column gappy overlaid" data-control="COLOR">
-      <svg xmlns='http://www.w3.org/2000/svg'  width='45' height='45' viewport='0 0 45 45'>
-        <rect id="chosenSecondaryColor" x="0" y="0" width="30" height="30" fill="#7eaaad" stroke="grey"/>
-        <rect id="chosenPrimaryColor" x="15" y="15" width="30" height="30" fill="#b8895f" stroke="grey"/>
-      </svg>
-      <div class="flex-row gappy">
-        <div class="flex-column gappy">
-          <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
-          <!-- blues -->
-          <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
-          <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
-          <!-- greens -->
-          <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
-          <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
-          <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
-          <!-- browns oranges -->
-          <div class="swatch" style="background:#943636" data-color="#943636"></div>
-          <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
-          <div class="swatch" style="background:#908a07" data-color="#908a07"></div>
-          <div class="swatch" style="background:#574d39" data-color="#574d39"></div>
-          <div class="swatch" style="background:#000000" data-color="#000000"></div>
-        </div>
-        <div class="flex-column gappy">
-          <div class="swatch" style="background:#535272" data-color="#535272"></div>
-          <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
-          <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
-          <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
-          <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
-          <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
-          <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
-          <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
-          <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
-          <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
-        </div>
-      </div>
     </div>
   </div>
   <svg id="hexmap"></svg>
