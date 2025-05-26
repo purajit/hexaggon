@@ -29,6 +29,12 @@ const Controls = {
   OBJECT: "OBJECT",
   PATHTIPSYMBOL: "PATHTIPSYMBOL",
   TEXT: "TEXT",
+  GRIDDIRECTION: "GRIDDIRECTION",
+}
+
+const GridDirection = {
+  HORIZONTAL: "HORIZONTAL",
+  VERTICAL: "VERTICAL",
 }
 
 const LAYER_TOOL_COMPATIBILITY = {
@@ -41,7 +47,7 @@ const LAYER_TOOL_COMPATIBILITY = {
 };
 
 const LAYER_CONTROL_COMPATIBILITY = {
-  [Layers.GRID]: [Controls.COLOR],
+  [Layers.GRID]: [Controls.COLOR, Controls.GRIDDIRECTION],
   [Layers.COLOR]: [Controls.COLOR],
   [Layers.OBJECT]: [Controls.OBJECT],
   [Layers.PATH]: [Controls.COLOR, Controls.PATHTIPSYMBOL],
@@ -53,8 +59,6 @@ const LAYER_CONTROL_COMPATIBILITY = {
  * GLOBAL STATE *
  ****************/
 const GLOBAL_STATE = {
-  // whether the use vertical-oriented axes (hexagon pointy up and down)
-  useVerticalAxes: false,
   hexes: {},
   currentLayer: Layers.COLOR,
   currentTool: Tools.BRUSH,
@@ -74,6 +78,7 @@ const GLOBAL_STATE = {
     GRID: {
       primaryColor: "#c4b9a5",
       secondaryColor: "#000000",
+      gridDirection: GridDirection.HORIZONTAL,
     },
 
     COLOR: {
@@ -260,8 +265,13 @@ TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
   GLOBAL_STATE.layers.TEXT.underline = !GLOBAL_STATE.layers.TEXT.underline;
 });
 
-document.getElementById("rotateAxesBtn").addEventListener("click", (e) => {
-  GLOBAL_STATE.useVerticalAxes = !GLOBAL_STATE.useVerticalAxes;
+document.getElementById("horizontalGridBtn").addEventListener("click", (e) => {
+  GLOBAL_STATE.layers.GRID.gridDirection = GridDirection.HORIZONTAL;
+  svgInit();
+});
+
+document.getElementById("verticalGridBtn").addEventListener("click", (e) => {
+  GLOBAL_STATE.layers.GRID.gridDirection = GridDirection.VERTICAL;
   svgInit();
 });
 
@@ -481,20 +491,20 @@ function zoom(scale, mouseX, mouseY) {
 }
 
 function hexIndexToPixel(c, r) {
-  if (!GLOBAL_STATE.useVerticalAxes) {
-    const x = HEX_RADIUS * 3/2 * c;
-    const y = HEX_RADIUS * Math.sqrt(3) * (r + 0.5 * (c % 2));
+  if (GLOBAL_STATE.layers.GRID.gridDirection == GridDirection.VERTICAL) {
+    const x = HEX_RADIUS * Math.sqrt(3) * (c + 0.5 * (r % 2));
+    const y = HEX_RADIUS * 3/2 * r;
     return {x, y};
   }
-  const x = HEX_RADIUS * Math.sqrt(3) * (c + 0.5 * (r % 2));
-  const y = HEX_RADIUS * 3/2 * r;
+  const x = HEX_RADIUS * 3/2 * c;
+  const y = HEX_RADIUS * Math.sqrt(3) * (r + 0.5 * (c % 2));
   return {x, y};
 }
 
 function getHexNeighbors(_c, _r) {
   const c = parseInt(_c);
   const r = parseInt(_r);
-  if (GLOBAL_STATE.useVerticalAxes) {
+  if (GLOBAL_STATE.layers.GRID.gridDirection == GridDirection.VERTICAL) {
     const offset = (r % 2 == 0) ? -1 : 1;
     return [
       // left and right
@@ -778,13 +788,13 @@ function drawHex(c, r) {
   const points = [];
   for (let i = 0; i < 6; i++) {
     const angle = Math.PI / 3 * i;
-    if (!GLOBAL_STATE.useVerticalAxes) {
-      const px = x + HEX_RADIUS * Math.cos(angle);
-      const py = y + HEX_RADIUS * Math.sin(angle);
-      points.push(`${px},${py}`);
-    } else {
+    if (GLOBAL_STATE.layers.GRID.gridDirection == GridDirection.VERTICAL) {
       const px = x + HEX_RADIUS * Math.sin(angle);
       const py = y + HEX_RADIUS * Math.cos(angle);
+      points.push(`${px},${py}`);
+    } else {
+      const px = x + HEX_RADIUS * Math.cos(angle);
+      const py = y + HEX_RADIUS * Math.sin(angle);
       points.push(`${px},${py}`);
     }
   }
