@@ -18,16 +18,16 @@
         <button class="layer-picker-btn btn" title="Text layer (5)" data-layer="TEXT">📝</button>
       </div>
       <div id="toolPicker" class="flex-column overlaid">
-        <button class="tool-picker-btn btn" title="Select tool (M)" data-tool="SELECT">⊹</button>
         <button class="tool-picker-btn btn" title="Brush tool (B)" data-tool="BRUSH">🖌</button>
         <button class="tool-picker-btn btn" title="Fill tool (G)" data-tool="FILL">🪣</button>
-        <button class="tool-picker-btn btn" title="Eyedropper tool (I; Alt/Opt for temporary)" data-tool="EYEDROPPER">️💧</button>
         <button class="tool-picker-btn btn" title="Eraser tool (E)" data-tool="ERASER">️🧻</button>
+        <button class="tool-picker-btn btn" title="Eyedropper tool (I; Alt/Opt for temporary)" data-tool="EYEDROPPER">️💧</button>
+        <button class="tool-picker-btn btn" title="Select tool (M)" data-tool="SELECT">⊹</button>
         <button class="tool-picker-btn btn" title="Zoom tool (Z)" data-tool="ZOOM">️🔍</button>
       </div>
       <div class="overlaid">
         <button id="saveBtn" class="btn" title="Save map! (For personal appreciation, not for export/import - yet)">💾</button>
-        <button id="settingsBtn" class="btn" title="Settings">⚙️</button>
+        <button id="settingsBtn" class="layer-picker-btn btn" title="Settings" data-layer="SETTINGS">⚙️</button>
       </div>
     </div>
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="COLOR">
@@ -107,28 +107,7 @@
         <div class="object-btn btn border-box" data-text="🛖">🛖</div>
         <div class="object-btn btn border-box" data-text="🪵">🪵</div>
       </div>
-      <!-- <div class="object-btn btn" data-object="barren"></div> -->
-      <!-- <div class="object-btn btn" data-object="dune"></div> -->
-      <!-- <div class="object-btn btn" data-object="mountain"></div> -->
-      <!-- <div class="object-btn btn" data-object="castle"></div> -->
-      <!-- <div class="object-btn btn" data-object="house"></div> -->
-      <!-- <div class="object-btn btn" data-object="pond"></div> -->
-      <!-- <div class="object-btn btn" data-object="lily"></div> -->
-      <!-- <div class="object-btn btn" data-object="marsh"></div> -->
-      <!-- <div class="object-btn btn" data-object="trees"></div> -->
-      <!-- <div class="object-btn btn" data-object="conifer"></div> -->
-      <!-- <div class="object-btn btn" data-object="water"></div> -->
     </div>
-    <!-- <div id="pathSymbolGrid" class="layer-control control-panel flex-column gappy overlaid" data-control="PATHTIPSYMBOL"> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box primaryselected" data-text=""></div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="⚓">⚓</div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="🚢">🚢</div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="❌">❌</div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="📍">📍</div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="⚔️">⚔️</div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="🚩">🚩</div> -->
-    <!--   <div class="path-tip-symbol-btn btn border-box" data-text="💣">💣</div> -->
-    <!-- </div> -->
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="TEXT">
       <div class="flex-row gappy">
         <input id="textFontSize" type="number" class="border-box" value="45"></input>
@@ -139,16 +118,21 @@
       <input id="textInput" placeholder="Text to insert"></input>
     </div>
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="GRIDDIRECTION">
+      <!-- TODO: grid line thickness -->
       <button id="horizontalGridBtn" class="hexagon-btn btn border-box primaryselected" title="Use a horizontal grid. DRAWING WILL NOT BE PRESERVED">
-        <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/3000/svg">
+        <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/3000/svg" transform="rotate(90)">
           <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z"\/>
         </svg>
       </button>
       <button id="verticalGridBtn" class="hexagon-btn btn border-box" title="Use a vertical grid. DRAWING WILL NOT BE PRESERVED">
         <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z" transform="rotate(90deg)"/>
+          <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z"/>
         </svg>
       </button>
+    </div>
+    <div class="layer-control control-panel flex-column gappy overlaid" data-control="SETTINGS">
+      <!-- TODO: invert drag scrolling -->
+      <!-- TODO: dark mode -->
     </div>
   </div>
   <svg id="hexmap"></svg>
