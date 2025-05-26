@@ -11,8 +11,7 @@ Features:
 * Saving as an svg
 * Shortcuts for all modes and layers!
 * More mouse shortcuts:
-  * Cmd + Left Click: change the color of the canvas
-  * Middle Click + drag:   drag
+  * Middle-click and drag: scroll
   * Cmd + Scroll: zoom
 
 Just open `docs/index.html` to run locally!
