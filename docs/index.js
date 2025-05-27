@@ -20,6 +20,7 @@ const Tools = {
   SELECT: "SELECT",
   BRUSH: "BRUSH",
   FILL: "FILL",
+  LINE: "LINE",
   EYEDROPPER: "EYEDROPPER",
   ERASER: "ERASER",
   ZOOM: "ZOOM",
@@ -41,8 +42,8 @@ const GridDirection = {
 
 const LAYER_TOOL_COMPATIBILITY = {
   [Layers.GRID]: [Tools.ZOOM],
-  [Layers.COLOR]: [Tools.BRUSH, Tools.FILL, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
-  [Layers.OBJECT]: [Tools.BRUSH, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
+  [Layers.COLOR]: [Tools.BRUSH, Tools.FILL, Tools.LINE, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
+  [Layers.OBJECT]: [Tools.BRUSH, Tools.LINE, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
   [Layers.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
   [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
   [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
@@ -87,6 +88,11 @@ const GLOBAL_STATE = {
     previousTool: Tools.BRUSH,
     active: false,
   },
+
+  // each element is {type, old, new}
+  pauseUndoStack: false,  // to prevent adding actions to undo stack, during init/undo
+  undoStack: [],
+  redoStack: [],
 
   layers: {
     GRID: {
@@ -134,9 +140,16 @@ const GLOBAL_STATE = {
   },
 }
 
-/***********
- * THE DOM *
- ***********/
+/************************************************************************
+ * THE DOM                                                              *
+ * - image listeners should only go on constant elements we know exist, *
+ *   and not on sub-SVG elements. This makes for more efficient event   *
+ *   handling, and also makes importing simple, since we don't have to  *
+ *   manage anything extra that could break/be forgotten                *
+ * - any peristent key/mouse state should go into GLOBAL_STATE.keyState *
+ *   or GLOBAL_STATE.mouseState. This helps us clear and and manage it  *
+ *   togther                                                            *
+ ************************************************************************/
 const SVG = document.getElementById("hexmap");
 const SWATCHES = document.querySelectorAll(".swatch");
 const LAYER_PICKER_BUTTONS = document.querySelectorAll(".layer-picker-btn");
@@ -158,6 +171,14 @@ const GRID_SAMPLE_DIVS = document.querySelectorAll(".grid-sample")
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
   if (document.activeElement.tagName == "INPUT") {
+    return;
+  }
+  if (GLOBAL_STATE.keyState.holdingMeta) {
+    switch(e.code) {
+    case "KeyZ":
+      undoLastAction();
+      break;
+    }
     return;
   }
   switch(e.code) {
@@ -190,6 +211,9 @@ document.addEventListener("keydown", e => {
     break;
   case "KeyE":
     switchToTool(Tools.ERASER);
+    break;
+  case "KeyL":
+    switchToTool(Tools.LINE);
     break;
   case "KeyM":
     switchToTool(Tools.SELECT);
@@ -411,26 +435,6 @@ function setSecondaryObject(objectText) {
   });
 }
 
-function setCanvasColor(previousCanvasColor, color) {
-  GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("fill", color));
-  if (previousCanvasColor == color) {
-    return;
-  }
-  Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
-    if (hexEntry.hex.getAttribute("fill") == previousCanvasColor)
-      hexEntry.hex.setAttribute("fill", color);
-  });
-  SVG.setAttribute("canvasColor", color);
-}
-
-function setGridColor(color) {
-  Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
-    hexEntry.hex.setAttribute("stroke", color);
-  });
-  GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("stroke", color))
-  SVG.setAttribute("gridColor", color);
-}
-
 function setPrimaryColor(color) {
   if (GLOBAL_STATE.currentLayer == Layers.GRID) {
     setCanvasColor(GLOBAL_STATE.layers.GRID.primaryColor, color);
@@ -441,7 +445,7 @@ function setPrimaryColor(color) {
 
 function setSecondaryColor(color) {
   if (GLOBAL_STATE.currentLayer == Layers.GRID) {
-    setGridColor(color);
+    setGridColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor, color);
   }
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor = color;
   CHOSEN_SECONDARY_COLOR_DIV.setAttribute("fill", color);
@@ -471,7 +475,7 @@ function switchToLayer(layer) {
       b.classList.remove("selected");
     }
   });
-  switchToTool(Tools.BRUSH);
+  switchToTool(LAYER_TOOL_COMPATIBILITY[layer][0]);
   setPrimaryColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor);
   setSecondaryColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor);
 }
@@ -593,9 +597,39 @@ function getHexNeighbors(_c, _r) {
   ];
 }
 
-function colorHex(c, r) {
-  const fillColor = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.COLOR.secondaryColor : GLOBAL_STATE.layers.COLOR.primaryColor;
+function setCanvasColor(previousCanvasColor, color) {
+  GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("fill", color));
+  if (previousCanvasColor == color) {
+    return;
+  }
+  Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
+    if (hexEntry.hex.getAttribute("fill") == previousCanvasColor)
+      hexEntry.hex.setAttribute("fill", color);
+  });
+  SVG.setAttribute("canvasColor", color);
+  addToUndoStack({"type": "canvasColor", "old": previousCanvasColor, "new": color});
+}
+
+function setGridColor(previousGridColor, color) {
+  Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
+    hexEntry.hex.setAttribute("stroke", color);
+  });
+  GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("stroke", color))
+  SVG.setAttribute("gridColor", color);
+  addToUndoStack({"type": "gridColor", "old": previousGridColor, "new": color});
+}
+
+function colorHex(c, r, fillColor=null) {
+  if (!fillColor) {
+    fillColor = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.COLOR.secondaryColor : GLOBAL_STATE.layers.COLOR.primaryColor;
+  }
+  const oldFillColor = GLOBAL_STATE.drawing.hexes[`${c},${r}`].hex.getAttribute("fill");
+  if (oldFillColor == fillColor) {
+    return;
+  }
   GLOBAL_STATE.drawing.hexes[`${c},${r}`].hex.setAttribute("fill", fillColor);
+  // TODO: undo for floodfill
+  addToUndoStack({"type": "color", "old": oldFillColor, "new": fillColor, "target": [c, r]});
   // easy way to test hex neighbor logic
   // getHexNeighbors(c, r).forEach(h => {
   //   console.log(h)
@@ -624,9 +658,17 @@ function floodFill(startC, startR, fn) {
   visited.forEach(s => fn(...s.split(",")));
 }
 
-function placeObjectOnHex(c, r) {
-  const objectToUse = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.OBJECT.secondaryObject : GLOBAL_STATE.layers.OBJECT.primaryObject;
+function placeObjectOnHex(c, r, objectToUse=null) {
+  if (objectToUse === null) {
+    objectToUse = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.OBJECT.secondaryObject : GLOBAL_STATE.layers.OBJECT.primaryObject;
+  }
+  const oldObject = GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject.textContent;
+  if (oldObject == objectToUse) {
+    return;
+  }
+
   GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject.textContent = objectToUse;
+  addToUndoStack({"type": "object", "old": oldObject, "new": objectToUse, "target": [c, r]});
 }
 
 function drawBoundary(e) {
@@ -671,8 +713,10 @@ function drawBoundary(e) {
   line.setAttribute("stroke-linecap", "round");
   line.classList.add("boundary");
   line.classList.add(`eraseable-${Layers.BOUNDARY}`);
+  line.id = crypto.randomUUID();
   // line.classList.add("no-pointer-events");
   SVG.appendChild(line);
+  addToUndoStack({"type": "boundary", "target": [line.id]});
   GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = closest;
   GLOBAL_STATE.layers.BOUNDARY.lastHexEntry = closestHexEntry;
 }
@@ -701,14 +745,6 @@ function startBoundaryDrawing(hexEntry, mouseX, mouseY) {
   SVG.addEventListener("mousemove", drawBoundary);
 }
 
-function isEqualWithinTolerance(x1, x2) {
-  return Math.abs(x1 - x2) <= 0.1;
-}
-
-function arePointsEqual(p1, p2) {
-  return isEqualWithinTolerance(p1.x, p2.x) && isEqualWithinTolerance(p1.y, p2.y)
-}
-
 function drawPath(hexEntry) {
   if (!GLOBAL_STATE.layers.PATH.lastHexEntry) {
     GLOBAL_STATE.layers.PATH.lastHexEntry = hexEntry;
@@ -717,7 +753,7 @@ function drawPath(hexEntry) {
 
   const lastHexEntry = GLOBAL_STATE.layers.PATH.lastHexEntry;
 
-  if (arePointsEqual(lastHexEntry, hexEntry)) {
+  if (lastHexEntry.c == hexEntry.c && lastHexEntry.r == hexEntry.r) {
     return;
   }
 
@@ -738,6 +774,7 @@ function drawPath(hexEntry) {
   line.setAttribute("r2", hexEntry.r);
   line.classList.add("path");
   line.classList.add(`eraseable-${Layers.PATH}`);
+  line.id = crypto.randomUUID();
   // line.classList.add("no-pointer-events");
 
   const lineHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -757,9 +794,11 @@ function drawPath(hexEntry) {
   lineHighlight.setAttribute("r2", hexEntry.r);
   lineHighlight.classList.add("path-highlight");
   lineHighlight.classList.add(`eraseable-${Layers.PATH}`);
+  lineHighlight.id = crypto.randomUUID();
   // lineHighlight.classList.add("no-pointer-events");
 
   GLOBAL_STATE.layers.PATH.lastHexEntry = hexEntry;
+  addToUndoStack({"type": "path", "target": [line.id, lineHighlight.id]});
   SVG.appendChild(lineHighlight);
   SVG.appendChild(line);
 }
@@ -788,6 +827,9 @@ function placeTextAtPoint(pt) {
   textbox.classList.add("no-pointer-events");
   textbox.classList.add("in-image-text");
   textbox.classList.add(`eraseable-${Layers.TEXT}`);
+  textbox.id = crypto.randomUUID();
+
+  addToUndoStack({"type": "text", "target": [textbox.id]});
   SVG.appendChild(textbox);
 }
 
@@ -800,7 +842,7 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
     } else if (GLOBAL_STATE.currentTool == Tools.FILL) {
       floodFill(c, r, colorHex);
     } else if (GLOBAL_STATE.currentTool == Tools.ERASER) {
-      hex.setAttribute("fill", GLOBAL_STATE.layers.GRID.primaryColor);
+      colorHex(c, r, GLOBAL_STATE.layers.GRID.primaryColor);
     } else if (GLOBAL_STATE.currentTool == Tools.EYEDROPPER) {
       if (GLOBAL_STATE.mouseState.holdingRightClick) {
         setSecondaryColor(hex.getAttribute("fill"));
@@ -821,7 +863,7 @@ function handleHexInteraction(c, r, mouseX, mouseY, isClick) {
         setPrimaryObject(GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject.textContent);
       }
     } else if (GLOBAL_STATE.currentTool == Tools.ERASER) {
-      GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject.textContent = "";
+      placeObjectOnHex(c, r, "");
     }
   } else if (GLOBAL_STATE.currentLayer == Layers.BOUNDARY) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
@@ -885,6 +927,7 @@ function drawHex(c, r) {
 }
 
 function importSvg(uploadedSvgStr) {
+  GLOBAL_STATE.pauseUndoStack = true;
   const parser = new DOMParser();
   const uploadedSvg = parser.parseFromString(uploadedSvgStr, "image/svg+xml").documentElement;
   GLOBAL_STATE.drawing.gridDirection = uploadedSvg.getAttribute("gridDirection");
@@ -905,11 +948,14 @@ function importSvg(uploadedSvgStr) {
     const r = hexObject.getAttribute("r");
     GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject = hexObject;
   });
+  switchToLayer(Layers.COLOR);
+  GLOBAL_STATE.pauseUndoStack = false;
 }
 
 function svgInit() {
+  GLOBAL_STATE.pauseUndoStack = true;
   SVG.setAttribute("gridDirection", GLOBAL_STATE.drawing.gridDirection);
-  setGridColor(GLOBAL_STATE.layers.GRID.secondaryColor);
+  setGridColor(GLOBAL_STATE.layers.GRID.secondaryColor, GLOBAL_STATE.layers.GRID.secondaryColor);
   setCanvasColor(GLOBAL_STATE.layers.GRID.primaryColor, GLOBAL_STATE.layers.GRID.primaryColor);
   SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   for (let h in GLOBAL_STATE.drawing.hexes) delete GLOBAL_STATE.drawing.hexes[h];
@@ -921,6 +967,7 @@ function svgInit() {
     }
   }
   switchToLayer(Layers.COLOR);
+  GLOBAL_STATE.pauseUndoStack = false;
   // smolbean grid for inspection ease
   // for (let c = 3; c < 13; c++) {
   //   for (let r = 3; r < 13; r++) {
@@ -932,6 +979,45 @@ function svgInit() {
 /*************************
  * EXTRA FUNCTIONALITIES *
  *************************/
+function addToUndoStack(action) {
+  if (GLOBAL_STATE.pauseUndoStack) {
+    return ;
+  }
+  GLOBAL_STATE.undoStack.push(action);
+}
+
+function undoLastAction() {
+  const lastAction = GLOBAL_STATE.undoStack.pop();
+  if (!lastAction) {
+    return;
+  }
+  console.log("undoing", lastAction);
+  GLOBAL_STATE.pauseUndoStack = true;
+  switch(lastAction["type"]) {
+  case "canvasColor":
+    setCanvasColor(lastAction["new"], lastAction["old"]);
+    break;
+  case "gridColor":
+    setGridColor(lastAction["new"], lastAction["old"]);
+    break;
+  case "color":
+    colorHex(lastAction["target"][0], lastAction["target"][1], lastAction["old"]);
+    break;
+  case "object":
+    placeObjectOnHex(lastAction["target"][0], lastAction["target"][1], lastAction["old"]);
+    break;
+  case "boundary":
+  case "text":
+    SVG.removeChild(SVG.getElementById(lastAction["target"]));
+    break;
+  case "path":
+    SVG.removeChild(SVG.getElementById(lastAction["target"][0]));
+    SVG.removeChild(SVG.getElementById(lastAction["target"][1]));
+    break;
+  }
+  GLOBAL_STATE.pauseUndoStack = false;
+}
+
 function exportToSvg() {
   const clonedSvg = SVG.cloneNode(true);
   const bbox = SVG.getBBox();
