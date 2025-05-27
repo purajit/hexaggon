@@ -122,8 +122,7 @@ const GLOBAL_STATE = {
     BOUNDARY: {
       primaryColor: "#b8895f",
       secondaryColor: "#7eaaad",
-      lastBoundaryPoint: null,
-      lastHexEntry: null,
+      lastCRN: null,
       boundaryDrawingEvent: null,
     },
 
@@ -361,7 +360,7 @@ SVG.addEventListener("mouseover", (e) => {
   }
 });
 SVG.addEventListener("mouseup", () => {
-  if (GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint) {
+  if (GLOBAL_STATE.layers.BOUNDARY.lastCRN) {
     SVG.removeEventListener("mousemove", drawBoundary);
   }
   if (GLOBAL_STATE.mouseState.holdingCenterClick) {
@@ -369,8 +368,7 @@ SVG.addEventListener("mouseup", () => {
   }
   GLOBAL_STATE.mouseState.holdingStdClick = false;
   GLOBAL_STATE.mouseState.holdingCenterClick = false;
-  GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = null;
-  GLOBAL_STATE.layers.BOUNDARY.lastHexEntry = null;
+  GLOBAL_STATE.layers.BOUNDARY.lastCRN = null;
   GLOBAL_STATE.layers.PATH.activePath = null;
   GLOBAL_STATE.layers.PATH.lastHexEntry = null;
 });
@@ -529,9 +527,13 @@ function switchToTool(tool, temporarily=false) {
   GLOBAL_STATE.currentTool = tool;
 }
 
-/*************
- * SVG UTILS *
- *************/
+/************************************************************************
+ * SVG UTILS                                                            *
+ * - use indices (c,r) instead of coordinates (x,y) as much as possible *
+ *   to avoid floating points. (c,r) can be exactly precise - and also  *
+ *   will not change over the course of export/import, whereas coords   *
+ *   might jiggle around slightly                                       *
+ ************************************************************************/
 function freeDragScroll(e) {
   scroll(-e.movementX, -e.movementY);
 }
@@ -675,79 +677,138 @@ function placeObjectOnHex(c, r, objectToUse=null) {
   addToUndoStack({"type": "object", "old": oldObject, "new": objectToUse, "target": [c, r]});
 }
 
-function drawBoundary(e) {
-  const pt = new DOMPoint(e.x, e.y).matrixTransform(SVG.getScreenCTM().inverse());
-  const lastHexEntry = GLOBAL_STATE.layers.BOUNDARY.lastHexEntry;
-  let closest = null;
-  let closestDistance = Infinity;
-  let closestHexEntry = null;
-  getHexNeighbors(lastHexEntry.c, lastHexEntry.r).forEach(n => {
-    const hexnEntry = GLOBAL_STATE.drawing.hexes[`${n[0]},${n[1]}`];
-    const hexn = GLOBAL_STATE.drawing.hexes[`${n[0]},${n[1]}`].hex;
-    for (let i = 0; i < hexn.points.length; i++) {
-      // first, check that the point is even a neighbor - since we know it's a hex vertex, it must
-      // be within HEX_RADIUS distance in both dimensions. This helps cut down how much squaring we
-      // have to do
-      if (Math.abs(hexn.points[i].x - pt.x) < HEX_RADIUS && Math.abs(hexn.points[i].y - pt.y) < HEX_RADIUS ) {
-        const distance = (hexn.points[i].x - pt.x) ** 2 + (hexn.points[i].y - pt.y) ** 2;
-        if (distance < closestDistance) {
-          closest = hexn.points[i];
-          closestDistance = distance;
-          closestHexEntry = hexnEntry;
-        }
-      }
-    }
-  });
-
-  // we only want to draw boundary lines on top of existing hex edges.
-  // we already know that our vertices are on hex vertices. If the distance
-  // is within a unit of the hex radius, that means this must be a hex edge
-  const lineLength = (GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint.x - closest.x) ** 2 + (GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint.y - closest.y) ** 2;
-  if (Math.abs(lineLength - HEX_RADIUS_SQUARED) > 5) {
-    return
-  }
-  const strokeColor = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.BOUNDARY.secondaryColor : GLOBAL_STATE.layers.BOUNDARY.primaryColor;
+// to avoid using floating points in the source of truth/identification, we use
+// a tuple of (c, r, n): (c, r) identifies a hex, n is the index of the vertex.
+// While a single vertex could belong to three potential hexes, that doesn't
+// matter - we just need any one. This also helps us avoid depending on coordinates
+// during import/export, instead relying on (c, r) like we do everywhere
+function drawBoundaryLine(fromCRN, toCRN, color) {
+  const fromHexVertex = GLOBAL_STATE.drawing.hexes[`${fromCRN.c},${fromCRN.r}`].hex.points[fromCRN.n];
+  const toHexVertex = GLOBAL_STATE.drawing.hexes[`${toCRN.c},${toCRN.r}`].hex.points[toCRN.n];
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("x1", GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint.x);
-  line.setAttribute("y1", GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint.y);
-  line.setAttribute("x2", closest.x);
-  line.setAttribute("y2", closest.y);
-  line.setAttribute("stroke", strokeColor);
+  const fromCRNStr = `${fromCRN.c},${fromCRN.r},${fromCRN.n}`;
+  const toCRNStr = `${toCRN.c},${toCRN.r},${toCRN.n}`
+  line.setAttribute("x1", fromHexVertex.x);
+  line.setAttribute("y1", fromHexVertex.y);
+  line.setAttribute("x2", toHexVertex.x);
+  line.setAttribute("y2", toHexVertex.y);
+  line.setAttribute("from-crn", fromCRNStr);
+  line.setAttribute("to-crn", toCRNStr);
+  line.setAttribute("stroke", color);
   line.setAttribute("stroke-width", 9);
   line.setAttribute("stroke-linecap", "round");
   line.classList.add("boundary");
   line.classList.add(`eraseable-${Layers.BOUNDARY}`);
   line.classList.add(`layer-${Layers.BOUNDARY}`);
-  line.id = crypto.randomUUID();
-  // line.classList.add("no-pointer-events");
   SVG.appendChild(line);
-  addToUndoStack({"type": "boundary", "target": [line.id]});
-  GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = closest;
-  GLOBAL_STATE.layers.BOUNDARY.lastHexEntry = closestHexEntry;
+  addToUndoStack({"type": "boundary", "target": {fromCRN: fromCRNStr, toCRN: toCRNStr, color}});
+}
+
+function drawBoundary(e) {
+  const currentHex = e.target;
+  const lastCRN = GLOBAL_STATE.layers.BOUNDARY.lastCRN;
+  // if we're not on one of the neigh of the lastCRN, do nothing. Cuts a lot of calculations
+  if (!currentHex.classList.contains("hex") || Math.abs(lastCRN.c - currentHex.getAttribute("c")) > 1 || Math.abs(lastCRN.r - currentHex.getAttribute("r")) > 1) {
+    return;
+  }
+  const pt = new DOMPoint(e.x, e.y).matrixTransform(SVG.getScreenCTM().inverse());
+  let closestN = null;
+  let closestDistance = Infinity;
+  for (let i = 0; i < currentHex.points.length; i++) {
+    // first, check that the point is even a neighbor - since we know it's a hex vertex, it must
+    // be within HEX_RADIUS distance in both dimensions. This helps cut down how much squaring we
+    // have to do
+    // TODO: There's probably some basic arithmetic we can do to instantly get the list of the three CRN neighbors
+    // and just check if we're close to one of them
+    if (Math.abs(currentHex.points[i].x - pt.x) < HEX_RADIUS && Math.abs(currentHex.points[i].y - pt.y) < HEX_RADIUS) {
+      const distance = (currentHex.points[i].x - pt.x) ** 2 + (currentHex.points[i].y - pt.y) ** 2;
+      if (distance < closestDistance) {
+        closestN = i;
+        closestDistance = distance;
+      }
+    }
+  }
+  const closestCRN = {c: currentHex.getAttribute("c"), r: currentHex.getAttribute("r"), n: closestN};
+
+  // we only want to draw boundary lines on top of existing hex edges.
+  // we already know that our vertices are on hex vertices. If the distance
+  // is within a unit of the hex radius, that means this must be a hex edge
+  const lastBoundaryPoint = GLOBAL_STATE.drawing.hexes[`${lastCRN.c},${lastCRN.r}`].hex.points[lastCRN.n];
+  const nextBoundaryPoint = GLOBAL_STATE.drawing.hexes[`${closestCRN.c},${closestCRN.r}`].hex.points[closestCRN.n];
+  const lineLength = (lastBoundaryPoint.x - nextBoundaryPoint.x) ** 2 + (lastBoundaryPoint.y - nextBoundaryPoint.y) ** 2;
+  if (Math.abs(lineLength - HEX_RADIUS_SQUARED) > 5) {
+    return
+  }
+  const strokeColor = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.BOUNDARY.secondaryColor : GLOBAL_STATE.layers.BOUNDARY.primaryColor;
+  drawBoundaryLine(lastCRN, closestCRN, strokeColor);
+  GLOBAL_STATE.layers.BOUNDARY.lastCRN = closestCRN;
 }
 
 function startBoundaryDrawing(hexEntry, mouseX, mouseY) {
-  if (GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint != null) {
+  if (GLOBAL_STATE.layers.BOUNDARY.lastCRN != null) {
     return;
   }
   const pt = new DOMPoint(mouseX, mouseY).matrixTransform(SVG.getScreenCTM().inverse());
-  let closest = null;
+  let closestN = null;
   let closestDistance = Infinity;
   const hex = hexEntry.hex;
   for (let i = 0; i < hex.points.length; i++) {
     const distance = (hex.points[i].x - pt.x) ** 2 + (hex.points[i].y - pt.y) ** 2;
     if (distance < closestDistance) {
-      closest = hex.points[i];
+      closestN = i;
       closestDistance = distance;
     }
   }
-  GLOBAL_STATE.layers.BOUNDARY.lastBoundaryPoint = closest;
-  GLOBAL_STATE.layers.BOUNDARY.lastHexEntry = hexEntry;
+  GLOBAL_STATE.layers.BOUNDARY.lastCRN = {c: hexEntry.c, r: hexEntry.r, n: closestN};
 
   // our primary mouseover event isn't good enough, since it only fires once per hex
   // at the same time, having a mousemove main loop is just wasteful. so add a special
   // listened just during boundary drawing, then remove it once drawn
   SVG.addEventListener("mousemove", drawBoundary);
+}
+
+function drawLineAndHighlight(fromHexEntry, toHexEntry, lineColor, highlightColor) {
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("fill", "none");
+  line.setAttribute("stroke-dasharray", 10);
+  line.setAttribute("stroke-linecap", "round");
+  line.setAttribute("stroke-linejoin", "round");
+  line.setAttribute("stroke-width", 3);
+  line.setAttribute("stroke", lineColor);
+  line.setAttribute("x1", fromHexEntry.x);
+  line.setAttribute("y1", fromHexEntry.y);
+  line.setAttribute("c1", fromHexEntry.c);
+  line.setAttribute("r1", fromHexEntry.r);
+  line.setAttribute("x2", toHexEntry.x);
+  line.setAttribute("y2", toHexEntry.y);
+  line.setAttribute("c2", toHexEntry.c);
+  line.setAttribute("r2", toHexEntry.r);
+  line.classList.add("path");
+  line.classList.add(`eraseable-${Layers.PATH}`);
+  line.classList.add(`layer-${Layers.PATH}`);
+
+  const lineHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  lineHighlight.setAttribute("fill", "none");
+  lineHighlight.setAttribute("stroke-linecap", "round");
+  lineHighlight.setAttribute("stroke-linejoin", "round");
+  lineHighlight.setAttribute("stroke-width", 7);
+  lineHighlight.setAttribute("stroke-opacity", 0.5);
+  lineHighlight.setAttribute("stroke", highlightColor);
+  lineHighlight.setAttribute("x1", fromHexEntry.x);
+  lineHighlight.setAttribute("y1", fromHexEntry.y);
+  lineHighlight.setAttribute("c1", fromHexEntry.c);
+  lineHighlight.setAttribute("r1", fromHexEntry.r);
+  lineHighlight.setAttribute("x2", toHexEntry.x);
+  lineHighlight.setAttribute("y2", toHexEntry.y);
+  lineHighlight.setAttribute("c2", toHexEntry.c);
+  lineHighlight.setAttribute("r2", toHexEntry.r);
+  lineHighlight.classList.add("path-highlight");
+  lineHighlight.classList.add(`eraseable-${Layers.PATH}`);
+  lineHighlight.classList.add(`layer-${Layers.PATH}`);
+
+  addToUndoStack({"type": "path", "target": {from: [fromHexEntry.c, fromHexEntry.r], to: [toHexEntry.c, toHexEntry.r], lineColor, highlightColor}});
+  SVG.appendChild(lineHighlight);
+  SVG.appendChild(line);
 }
 
 function drawPath(hexEntry) {
@@ -762,52 +823,9 @@ function drawPath(hexEntry) {
     return;
   }
 
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("fill", "none");
-  line.setAttribute("stroke", GLOBAL_STATE.layers.PATH.primaryColor);
-  line.setAttribute("stroke-dasharray", 10);
-  line.setAttribute("stroke-linecap", "round");
-  line.setAttribute("stroke-linejoin", "round");
-  line.setAttribute("stroke-width", 3);
-  line.setAttribute("x1", lastHexEntry.x);
-  line.setAttribute("y1", lastHexEntry.y);
-  line.setAttribute("c1", lastHexEntry.c);
-  line.setAttribute("r1", lastHexEntry.r);
-  line.setAttribute("x2", hexEntry.x);
-  line.setAttribute("y2", hexEntry.y);
-  line.setAttribute("c2", hexEntry.c);
-  line.setAttribute("r2", hexEntry.r);
-  line.classList.add("path");
-  line.classList.add(`eraseable-${Layers.PATH}`);
-  line.classList.add(`layer-${Layers.PATH}`);
-  line.id = crypto.randomUUID();
-  // line.classList.add("no-pointer-events");
-
-  const lineHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  lineHighlight.setAttribute("fill", "none");
-  lineHighlight.setAttribute("stroke", GLOBAL_STATE.layers.PATH.secondaryColor);
-  lineHighlight.setAttribute("stroke-linecap", "round");
-  lineHighlight.setAttribute("stroke-linejoin", "round");
-  lineHighlight.setAttribute("stroke-width", 7);
-  lineHighlight.setAttribute("stroke-opacity", 0.5);
-  lineHighlight.setAttribute("x1", lastHexEntry.x);
-  lineHighlight.setAttribute("y1", lastHexEntry.y);
-  lineHighlight.setAttribute("c1", lastHexEntry.c);
-  lineHighlight.setAttribute("r1", lastHexEntry.r);
-  lineHighlight.setAttribute("x2", hexEntry.x);
-  lineHighlight.setAttribute("y2", hexEntry.y);
-  lineHighlight.setAttribute("c2", hexEntry.c);
-  lineHighlight.setAttribute("r2", hexEntry.r);
-  lineHighlight.classList.add("path-highlight");
-  lineHighlight.classList.add(`eraseable-${Layers.PATH}`);
-  lineHighlight.classList.add(`layer-${Layers.PATH}`);
-  lineHighlight.id = crypto.randomUUID();
-  // lineHighlight.classList.add("no-pointer-events");
-
   GLOBAL_STATE.layers.PATH.lastHexEntry = hexEntry;
-  addToUndoStack({"type": "path", "target": [line.id, lineHighlight.id]});
-  SVG.appendChild(lineHighlight);
-  SVG.appendChild(line);
+
+  drawLineAndHighlight(lastHexEntry, hexEntry, GLOBAL_STATE.layers.PATH.primaryColor, GLOBAL_STATE.layers.PATH.secondaryColor);
 }
 
 function placeTextAtPoint(pt) {
@@ -836,7 +854,7 @@ function placeTextAtPoint(pt) {
   textbox.classList.add(`layer-${Layers.TEXT}`);
   textbox.id = crypto.randomUUID();
 
-  addToUndoStack({"type": "text", "target": [textbox.id]});
+  addToUndoStack({"type": "text", "target": {pt, textInput, color: GLOBAL_STATE.layers.TEXT.primaryColor}});
   SVG.appendChild(textbox);
 }
 
@@ -1014,14 +1032,39 @@ function undoLastAction() {
   case "object":
     placeObjectOnHex(lastAction["target"][0], lastAction["target"][1], lastAction["old"]);
     break;
-  case "boundary":
-  case "text":
-    SVG.removeChild(SVG.getElementById(lastAction["target"]));
+  case "boundary": {
+    const target = lastAction["target"];
+    SVG.querySelectorAll(".boundary").forEach(t => {
+      // {"type": "boundary", "target": {fromCRN, toCRN, color}}
+      console.log(t.getAttribute("from-crn"), t.getAttribute("to-crn"));
+      if (t.getAttribute("from-crn") == target["fromCRN"] && t.getAttribute("to-crn") == target["toCRN"] && t.getAttribute("stroke") == target["color"]) {
+        SVG.removeChild(t);
+      }
+    });
     break;
-  case "path":
-    SVG.removeChild(SVG.getElementById(lastAction["target"][0]));
-    SVG.removeChild(SVG.getElementById(lastAction["target"][1]));
+  }
+  case "text": {
+    const target = lastAction["target"];
+    SVG.querySelectorAll(".in-image-text").forEach(t => {
+      if (t.getAttribute("x") == target.pt.x && t.getAttribute("y") == target.pt.y && t.getAttribute("fill") == target.color && t.textContent == target["textInput"]) {
+        SVG.removeChild(t);
+      }
+    });
     break;
+  }
+  case "path": {
+    const target = lastAction["target"];
+    SVG.querySelectorAll(".path-highlight, .path").forEach(e => {
+      if (e.getAttribute("c1") == target.from[0] && e.getAttribute("r1") == target.from[1]
+        && e.getAttribute("c2") == target.to[0] && e.getAttribute("r2") == target.to[1]) {
+          if ((e.classList.contains("path") && e.getAttribute("stroke") == target.lineColor)
+            || (e.classList.contains("path-highlight") && e.getAttribute("stroke") == target.highlightColor)) {
+              SVG.removeChild(e);
+            }
+        }
+    });
+    break;
+  }
   }
   GLOBAL_STATE.pauseUndoStack = false;
 }
