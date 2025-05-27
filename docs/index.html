@@ -26,7 +26,9 @@
         <button class="tool-picker-btn btn" title="Zoom tool (Z)" data-tool="ZOOM">️🔍</button>
       </div>
       <div class="overlaid">
-        <button id="saveBtn" class="btn" title="Save map! (For personal appreciation, not for export/import - yet)">💾</button>
+        <button id="loadBtn" class="btn" title="Load/import image"><label for="fileUpload">📂</label></button>
+        <input id="fileUpload" class="hidden" type="file" accept="image/svg+xml"/>
+        <button id="saveBtn" class="btn" title="Save/export image">💾</button>
         <button id="settingsBtn" class="layer-picker-btn btn" title="Settings" data-layer="SETTINGS">⚙️</button>
       </div>
     </div>
