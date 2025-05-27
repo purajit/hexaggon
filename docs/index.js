@@ -452,6 +452,7 @@ function setSecondaryColor(color) {
 }
 
 function switchToLayer(layer) {
+  const previousLayer = GLOBAL_STATE.currentLayer;
   GLOBAL_STATE.currentLayer = layer;
   GLOBAL_STATE.currentTool = Tools.BRUSH;
   LAYER_CONTROLS.forEach(mc => {
@@ -474,6 +475,9 @@ function switchToLayer(layer) {
     } else {
       b.classList.remove("selected");
     }
+  });
+  document.querySelectorAll(`.layer-${previousLayer}`).forEach(e => {
+    e.classList.add("no-pointer-events");
   });
   switchToTool(LAYER_TOOL_COMPATIBILITY[layer][0]);
   setPrimaryColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor);
@@ -713,6 +717,7 @@ function drawBoundary(e) {
   line.setAttribute("stroke-linecap", "round");
   line.classList.add("boundary");
   line.classList.add(`eraseable-${Layers.BOUNDARY}`);
+  line.classList.add(`layer-${Layers.BOUNDARY}`);
   line.id = crypto.randomUUID();
   // line.classList.add("no-pointer-events");
   SVG.appendChild(line);
@@ -774,6 +779,7 @@ function drawPath(hexEntry) {
   line.setAttribute("r2", hexEntry.r);
   line.classList.add("path");
   line.classList.add(`eraseable-${Layers.PATH}`);
+  line.classList.add(`layer-${Layers.PATH}`);
   line.id = crypto.randomUUID();
   // line.classList.add("no-pointer-events");
 
@@ -794,6 +800,7 @@ function drawPath(hexEntry) {
   lineHighlight.setAttribute("r2", hexEntry.r);
   lineHighlight.classList.add("path-highlight");
   lineHighlight.classList.add(`eraseable-${Layers.PATH}`);
+  lineHighlight.classList.add(`layer-${Layers.PATH}`);
   lineHighlight.id = crypto.randomUUID();
   // lineHighlight.classList.add("no-pointer-events");
 
@@ -824,9 +831,9 @@ function placeTextAtPoint(pt) {
   textbox.setAttribute("y", pt.y);
   textbox.setAttribute("fill", GLOBAL_STATE.layers.TEXT.primaryColor);
   textbox.textContent = textInput;
-  textbox.classList.add("no-pointer-events");
   textbox.classList.add("in-image-text");
   textbox.classList.add(`eraseable-${Layers.TEXT}`);
+  textbox.classList.add(`layer-${Layers.TEXT}`);
   textbox.id = crypto.randomUUID();
 
   addToUndoStack({"type": "text", "target": [textbox.id]});
@@ -919,6 +926,7 @@ function drawHex(c, r) {
   hexObject.setAttribute("height", `${2*HEX_RADIUS}px`);
   hexObject.classList.add("no-pointer-events");
   hexObject.classList.add("hex-object");
+  hexObject.classList.add(`layer-${Layers.OBJECT}`);
 
   GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, hexObject, x, y, c, r};
 
