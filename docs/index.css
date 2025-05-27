@@ -43,6 +43,10 @@ html, body {
     background: #91b985;
 }
 
+.btn > label {
+    cursor: pointer;
+}
+
 .toolbar {
     padding: 1rem;
     position: absolute;

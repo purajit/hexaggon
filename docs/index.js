@@ -150,13 +150,13 @@ const TEXT_FONT_SIZE_DIV = document.getElementById("textFontSize");
 const TEXT_BOLD_DIV = document.getElementById("textBold");
 const TEXT_ITALICS_DIV = document.getElementById("textItalics");
 const TEXT_UNDERLINE_DIV = document.getElementById("textUnderline");
+const FILE_UPLOAD_INPUT = document.getElementById("fileUpload");
 const HORIZONTAL_GRID_BTN = document.getElementById("horizontalGridBtn");
 const VERTICAL_GRID_BTN = document.getElementById("verticalGridBtn");
 const GRID_SAMPLE_DIVS = document.querySelectorAll(".grid-sample")
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
-  console.log(e);
   if (document.activeElement.tagName == "INPUT") {
     return;
   }
@@ -296,6 +296,10 @@ VERTICAL_GRID_BTN.addEventListener("click", (e) => {
 
 document.getElementById("saveBtn").addEventListener("click", (e) => {
   exportToSvg();
+});
+
+FILE_UPLOAD_INPUT.addEventListener("change", (e) => {
+  FILE_UPLOAD_INPUT.files[0].text().then(uploadedSvg => importSvg(uploadedSvg));
 });
 
 // SVG events listeners
@@ -706,7 +710,6 @@ function arePointsEqual(p1, p2) {
 }
 
 function drawPath(hexEntry) {
-  console.log(hexEntry, GLOBAL_STATE.layers.PATH.lastHexEntry);
   if (!GLOBAL_STATE.layers.PATH.lastHexEntry) {
     GLOBAL_STATE.layers.PATH.lastHexEntry = hexEntry;
     return;
@@ -884,7 +887,6 @@ function drawHex(c, r) {
 function importSvg(uploadedSvgStr) {
   const parser = new DOMParser();
   const uploadedSvg = parser.parseFromString(uploadedSvgStr, "image/svg+xml").documentElement;
-  console.log(uploadedSvg);
   GLOBAL_STATE.drawing.gridDirection = uploadedSvg.getAttribute("gridDirection");
   GLOBAL_STATE.layers.GRID.primaryColor = uploadedSvg.getAttribute("canvasColor");
   GLOBAL_STATE.layers.GRID.secondaryColor = uploadedSvg.getAttribute("gridColor");
