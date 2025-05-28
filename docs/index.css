@@ -53,6 +53,10 @@ html, body {
     overflow: scroll;
 }
 
+.bottom {
+    bottom: 0;
+}
+
 .control-panel {
     padding: 10px;
 }

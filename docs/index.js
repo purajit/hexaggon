@@ -66,6 +66,8 @@ const LAYER_CONTROL_COMPATIBILITY = {
 const GLOBAL_STATE = {
   // this is the only part affected during import - keep it that way!
   drawing: {
+    name: "",
+    uuid: crypto.randomUUID(),
     gridDirection: GridDirection.HORIZONTAL,
     // "c,r" -> {hex, hexObject, x, y, c, r}
     hexes: {},
@@ -164,7 +166,8 @@ const TEXT_UNDERLINE_DIV = document.getElementById("textUnderline");
 const FILE_UPLOAD_INPUT = document.getElementById("fileUpload");
 const HORIZONTAL_GRID_BTN = document.getElementById("horizontalGridBtn");
 const VERTICAL_GRID_BTN = document.getElementById("verticalGridBtn");
-const GRID_SAMPLE_DIVS = document.querySelectorAll(".grid-sample")
+const GRID_SAMPLE_DIVS = document.querySelectorAll(".grid-sample");
+const ALL_FILES_LIST_DIVS = document.getElementById("allFilesList");
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
@@ -347,7 +350,6 @@ SVG.addEventListener("mousedown", (e) => {
   }
 });
 SVG.addEventListener("mouseover", (e) => {
-  console.log(e);
   if (GLOBAL_STATE.currentTool == Tools.ERASER && GLOBAL_STATE.mouseState.holdingStdClick) {
     if (e.target.classList.contains(`eraseable-${GLOBAL_STATE.currentLayer}`)) {
       let undoData = {};
@@ -1010,35 +1012,10 @@ function drawHex(c, r) {
   SVG.appendChild(hexObject);
 }
 
-function importSvg(uploadedSvgStr) {
-  GLOBAL_STATE.pauseUndoStack = true;
-  const parser = new DOMParser();
-  const uploadedSvg = parser.parseFromString(uploadedSvgStr, "image/svg+xml").documentElement;
-  GLOBAL_STATE.drawing.gridDirection = uploadedSvg.getAttribute("gridDirection");
-  GLOBAL_STATE.layers.GRID.primaryColor = uploadedSvg.getAttribute("canvasColor");
-  GLOBAL_STATE.layers.GRID.secondaryColor = uploadedSvg.getAttribute("gridColor");
-  SVG.innerHTML = uploadedSvg.innerHTML;
-
-  // populate the hex metadata
-  SVG.querySelectorAll(".hex").forEach(hex => {
-    const c = hex.getAttribute("c");
-    const r = hex.getAttribute("r");
-    const x = hex.getAttribute("x");
-    const y = hex.getAttribute("y");
-    GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, x, y, c, r}
-  });
-  SVG.querySelectorAll(".hex-object").forEach(hexObject => {
-    const c = hexObject.getAttribute("c");
-    const r = hexObject.getAttribute("r");
-    GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject = hexObject;
-  });
-  switchToLayer(Layers.COLOR);
-  GLOBAL_STATE.pauseUndoStack = false;
-}
-
 function svgInit() {
   GLOBAL_STATE.pauseUndoStack = true;
   SVG.setAttribute("gridDirection", GLOBAL_STATE.drawing.gridDirection);
+  SVG.setAttribute("uuid", GLOBAL_STATE.drawing.uuid);
   setGridColor(GLOBAL_STATE.layers.GRID.secondaryColor, GLOBAL_STATE.layers.GRID.secondaryColor);
   setCanvasColor(GLOBAL_STATE.layers.GRID.primaryColor, GLOBAL_STATE.layers.GRID.primaryColor);
   SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -1051,6 +1028,11 @@ function svgInit() {
     }
   }
   switchToLayer(Layers.COLOR);
+  const bbox = SVG.getBBox();
+  SVG.setAttribute(
+    "viewBox",
+    `${(bbox.width - window.innerWidth) / 2} ${(bbox.height - window.innerHeight) / 2} ${window.innerWidth} ${window.innerHeight}`
+  );
   GLOBAL_STATE.pauseUndoStack = false;
   // smolbean grid for inspection ease
   // for (let c = 3; c < 13; c++) {
@@ -1075,7 +1057,6 @@ function undoLastAction() {
   if (!lastAction) {
     return;
   }
-  console.log("undoing", lastAction);
   GLOBAL_STATE.pauseUndoStack = true;
   switch(lastAction.type) {
   // {type: "canvasColor", old, new}
@@ -1157,6 +1138,42 @@ function undoLastAction() {
   GLOBAL_STATE.pauseUndoStack = false;
 }
 
+function saveToLocalStorage() {
+  localStorage.setItem(`image-${GLOBAL_STATE.drawing.uuid}`, SVG.outerHTML);
+}
+
+function loadFromLocalStorage(uuid) {
+  importSvg(localStorage.getItem(`image-${uuid}`), false);
+}
+
+function importSvg(svgStr, shouldPersist=true) {
+  const parser = new DOMParser();
+  const uploadedSvg = parser.parseFromString(svgStr, "image/svg+xml").documentElement;
+  GLOBAL_STATE.drawing.uuid = uploadedSvg.getAttribute("uuid");
+  GLOBAL_STATE.drawing.gridDirection = uploadedSvg.getAttribute("gridDirection");
+  GLOBAL_STATE.layers.GRID.primaryColor = uploadedSvg.getAttribute("canvasColor");
+  GLOBAL_STATE.layers.GRID.secondaryColor = uploadedSvg.getAttribute("gridColor");
+  SVG.innerHTML = uploadedSvg.innerHTML;
+
+  // populate the hex metadata
+  SVG.querySelectorAll(".hex").forEach(hex => {
+    const c = hex.getAttribute("c");
+    const r = hex.getAttribute("r");
+    const x = hex.getAttribute("x");
+    const y = hex.getAttribute("y");
+    GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, x, y, c, r}
+  });
+  SVG.querySelectorAll(".hex-object").forEach(hexObject => {
+    const c = hexObject.getAttribute("c");
+    const r = hexObject.getAttribute("r");
+    GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject = hexObject;
+  });
+  switchToLayer(Layers.COLOR);
+  // if (shouldPersist) {
+  //   saveToLocalStorage()
+  // }
+}
+
 function exportToSvg() {
   const clonedSvg = SVG.cloneNode(true);
   const bbox = SVG.getBBox();
@@ -1174,3 +1191,10 @@ function exportToSvg() {
 }
 
 svgInit();
+// Object.keys(localStorage).forEach(k => {
+//   if (k.startsWith("image-")) {
+//     const div = document.createElement('div');
+//     div.textContent = k;
+//     ALL_FILES_LIST_DIVS.appendChild(div);
+//   }
+// })
