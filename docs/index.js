@@ -176,7 +176,6 @@ const GRID_THICKNESS_SLIDER_DIV = document.getElementById("gridThicknessSlider")
 
 // keyboard shortcuts
 document.addEventListener("keydown", e => {
-  console.log(e)
   if (document.activeElement.tagName == "INPUT") {
     return;
   }
