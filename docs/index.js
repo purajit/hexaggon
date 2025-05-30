@@ -626,9 +626,11 @@ function freeDragScroll(e) {
 function scroll(xdiff, ydiff) {
   const viewBox = SVG.getAttribute("viewBox") || `0 0 ${window.innerWidth} ${window.innerHeight}`;
   const [x, y, width, height] = viewBox.split(" ").map(Number);
-  SVG.setAttribute("viewBox", `${x + xdiff} ${y + ydiff} ${width} ${height}`);
-  MINIMAP_VIEWBOX.setAttribute("x", x + xdiff);
-  MINIMAP_VIEWBOX.setAttribute("y", y + ydiff);
+  const newX = x + xdiff;
+  const newY = y + ydiff;
+  SVG.setAttribute("viewBox", `${newX} ${newY} ${width} ${height}`);
+  MINIMAP_VIEWBOX.setAttribute("x", newX);
+  MINIMAP_VIEWBOX.setAttribute("y", newY);
   MINIMAP_VIEWBOX.setAttribute("width", width);
   MINIMAP_VIEWBOX.setAttribute("height", height);
   MINIMAP.removeChild(MINIMAP_VIEWBOX);
@@ -697,9 +699,9 @@ function setCanvasColor(previousCanvasColor, color) {
   Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
     if (hexEntry.hex.getAttribute("fill") == previousCanvasColor) {
       hexEntry.hex.setAttribute("fill", color);
+      hexEntry.minihex.setAttribute("fill", color);
+      hexEntry.minihex.setAttribute("stroke", color);
     }
-    hexEntry.minihex.setAttribute("fill", color);
-    hexEntry.minihex.setAttribute("stroke", color);
   });
   GLOBAL_STATE.layers.GRID.canvasColor = color;
   SVG.setAttribute("canvasColor", color);
@@ -726,6 +728,7 @@ function colorHex(c, r, fillColor=null, isFloodFill=false) {
     return;
   }
   GLOBAL_STATE.drawing.hexes[`${c},${r}`].hex.setAttribute("fill", fillColor);
+  GLOBAL_STATE.drawing.hexes[`${c},${r}`].minihex.setAttribute("fill", fillColor);
   if (!isFloodFill) {
     addToUndoStack({type: "color", old: oldFillColor, new: fillColor, target: [c, r]});
   }
@@ -1056,7 +1059,6 @@ function positionHexes(gridDirection) {
     hexEntry.hex.setAttribute("x", x);
     hexEntry.hex.setAttribute("y", y);
     hexEntry.hex.setAttribute("points", points.join(" "));
-    hexEntry.minihex.setAttribute("points", points.join(" "));
     hexEntry.hexObject.setAttribute("x", x);
     hexEntry.hexObject.setAttribute("y", y);
   });
@@ -1084,14 +1086,36 @@ function drawHex(c, r) {
   SVG.appendChild(hex);
   SVG.appendChild(hexObject);
 
-  const minihex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-  minihex.setAttribute("stroke-width", "1px");
-  minihex.setAttribute("c", c);
-  minihex.setAttribute("r", r);
-  minihex.classList.add("minihex");
-  MINIMAP.appendChild(minihex);
+  GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, hexObject, x: null, y: null, c, r};
+}
 
-  GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, hexObject, minihex, x: null, y: null, c, r};
+function initMiniMap(x, y, width, height) {
+  MINIMAP.querySelectorAll(".minihex").forEach(e => {
+    MINIMAP.removeChild(e)
+  });
+  Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
+    let pointsStr = "";
+    for (let i = 0; i < hexEntry.hex.points.length; i++) {
+      pointsStr += `${hexEntry.hex.points[i].x},${hexEntry.hex.points[i].y} `
+    }
+    const minihex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    minihex.setAttribute("stroke-width", "1px");
+    minihex.setAttribute("c", hexEntry.c);
+    minihex.setAttribute("r", hexEntry.r);
+    minihex.setAttribute("points", pointsStr);
+    minihex.setAttribute("fill", hexEntry.hex.getAttribute("fill"));
+    minihex.classList.add("minihex");
+    hexEntry.minihex = minihex;
+    MINIMAP.appendChild(minihex);
+  });
+  const minibbox = MINIMAP.getBBox();
+  MINIMAP.setAttribute("viewBox", `${minibbox.x} ${minibbox.y} ${minibbox.width} ${minibbox.height}`);
+  MINIMAP_VIEWBOX.setAttribute("x", x);
+  MINIMAP_VIEWBOX.setAttribute("y", y);
+  MINIMAP_VIEWBOX.setAttribute("width", width)
+  MINIMAP_VIEWBOX.setAttribute("height", height);
+  MINIMAP.removeChild(MINIMAP_VIEWBOX);
+  MINIMAP.appendChild(MINIMAP_VIEWBOX);
 }
 
 function svgInit() {
@@ -1108,17 +1132,6 @@ function svgInit() {
     }
   }
   positionHexes(GLOBAL_STATE.drawing.gridDirection);
-  setCanvasColor(null, GLOBAL_STATE.layers.GRID.canvasColor);
-  setGridColor(null, GLOBAL_STATE.layers.GRID.gridColor);
-
-  setPrimaryObject(GLOBAL_STATE.layers.OBJECT.primaryObject);
-  setSecondaryObject(GLOBAL_STATE.layers.OBJECT.secondaryObject);
-
-  TEXT_FONT_SIZE_DIV.value = DEFAULT_TEXT_FONT_SIZE;
-  GRID_THICKNESS_SLIDER_DIV.value = GLOBAL_STATE.layers.GRID.gridThickness;
-  HORIZONTAL_GRID_BTN.classList.add("primaryselected");
-
-  switchToLayer(Layers.COLOR);
   const bbox = SVG.getBBox();
   const midX = (bbox.width - window.innerWidth) / 2;
   const midY = (bbox.height - window.innerHeight) / 2;
@@ -1127,15 +1140,18 @@ function svgInit() {
     `${midX} ${midY} ${window.innerWidth} ${window.innerHeight}`
   );
 
-  const minibbox = MINIMAP.getBBox();
-  MINIMAP.setAttribute("viewBox", `${minibbox.x} ${minibbox.y} ${minibbox.width} ${minibbox.height}`);
-  MINIMAP_VIEWBOX.setAttribute("x", midX);
-  MINIMAP_VIEWBOX.setAttribute("y", midY);
-  MINIMAP_VIEWBOX.setAttribute("width", window.innerWidth);
-  MINIMAP_VIEWBOX.setAttribute("height", window.innerHeight);
-  MINIMAP.removeChild(MINIMAP_VIEWBOX);
-  MINIMAP.appendChild(MINIMAP_VIEWBOX);
+  initMiniMap(midX, midY, window.innerWidth, window.innerHeight);
 
+  setCanvasColor(null, GLOBAL_STATE.layers.GRID.canvasColor);
+  setGridColor(null, GLOBAL_STATE.layers.GRID.gridColor);
+  setPrimaryObject(GLOBAL_STATE.layers.OBJECT.primaryObject);
+  setSecondaryObject(GLOBAL_STATE.layers.OBJECT.secondaryObject);
+
+  TEXT_FONT_SIZE_DIV.value = DEFAULT_TEXT_FONT_SIZE;
+  GRID_THICKNESS_SLIDER_DIV.value = GLOBAL_STATE.layers.GRID.gridThickness;
+  HORIZONTAL_GRID_BTN.classList.add("primaryselected");
+
+  switchToLayer(Layers.COLOR);
   GLOBAL_STATE.pauseUndoStack = false;
   // smolbean grid for inspection ease
   // for (let c = 3; c < 13; c++) {
@@ -1259,9 +1275,10 @@ function importSvg(svgStr, shouldPersist=true) {
   const uploadedSvg = parser.parseFromString(svgStr, "image/svg+xml").documentElement;
   GLOBAL_STATE.drawing.uuid = uploadedSvg.getAttribute("uuid");
   GLOBAL_STATE.drawing.gridDirection = uploadedSvg.getAttribute("gridDirection");
-  GLOBAL_STATE.layers.GRID.canvasColor = uploadedSvg.getAttribute("canvasColor");
-  GLOBAL_STATE.layers.GRID.gridColor = uploadedSvg.getAttribute("gridColor");
   SVG.innerHTML = uploadedSvg.innerHTML;
+
+  let numRows = 0;
+  let numCols = 0;
 
   // populate the hex metadata
   SVG.querySelectorAll(".hex").forEach(hex => {
@@ -1269,13 +1286,21 @@ function importSvg(svgStr, shouldPersist=true) {
     const r = hex.getAttribute("r");
     const x = hex.getAttribute("x");
     const y = hex.getAttribute("y");
-    GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, x, y, c, r}
+    numRows = Math.max(numRows, r + 1);
+    numCols = Math.max(numCols, c + 1);
+    GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, x, y, c, r};
   });
   SVG.querySelectorAll(".hex-object").forEach(hexObject => {
     const c = hexObject.getAttribute("c");
     const r = hexObject.getAttribute("r");
     GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject = hexObject;
   });
+  GLOBAL_STATE.layers.GRID.rows = numRows;
+  GLOBAL_STATE.layers.GRID.cols = numCols;
+
+  initMiniMap(SVG.viewBox.baseVal.x, SVG.viewBox.baseVal.y, SVG.viewBox.baseVal.width, SVG.viewBox.baseVal.height);
+  setCanvasColor(null, uploadedSvg.getAttribute("canvasColor"));
+  setGridColor(null, uploadedSvg.getAttribute("gridColor"));
   switchToLayer(Layers.COLOR);
   clearWelcomeScreen();
   // if (shouldPersist) {
