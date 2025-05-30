@@ -174,304 +174,314 @@ const GRID_SAMPLE_DIVS = document.querySelectorAll(".grid-sample");
 const ALL_FILES_LIST_DIVS = document.getElementById("allFilesList");
 const GRID_THICKNESS_SLIDER_DIV = document.getElementById("gridThicknessSlider");
 
-// keyboard shortcuts
-document.addEventListener("keydown", e => {
-  if (document.activeElement.tagName == "INPUT") {
-    return;
-  }
-  if (GLOBAL_STATE.keyState.holdingMeta) {
+// the only event listeners not in these functions are
+// - mousemove (used to improve boundary drawing)
+// - the initial welcome page
+// and we should keep it that way.
+function registerDropUploadEventHandlers() {
+  FILE_UPLOAD_INPUT.addEventListener("change", (e) => {
+    FILE_UPLOAD_INPUT.files[0].text().then(uploadedSvg => importSvg(uploadedSvg));
+  });
+
+  document.addEventListener("drop", e => {
+    e.preventDefault();
+
+    if (e.dataTransfer.items) {
+      [...e.dataTransfer.items].forEach((item, i) => {
+        if (item.kind === "file") {
+          item.getAsFile().text().then(uploadedSvg => importSvg(uploadedSvg));
+        }
+      });
+    } else {
+      [...e.dataTransfer.files].forEach((file, i) => {
+        file.text().then(uploadedSvg => importSvg(uploadedSvg));
+      });
+    }
+  });
+
+  document.addEventListener("dragover", e => {
+    e.preventDefault();
+  });
+}
+
+function registerEventListeners() {
+  // keyboard shortcuts
+  document.addEventListener("keydown", e => {
+    if (document.activeElement.tagName == "INPUT") {
+      return;
+    }
+    if (GLOBAL_STATE.keyState.holdingMeta) {
+      switch(e.code) {
+      case "KeyZ":
+        undoLastAction();
+        break;
+      }
+      return;
+    }
     switch(e.code) {
+    case "Digit0":
+      switchToLayer(Layers.GRID);
+      break;
+    case "Digit1":
+      switchToLayer(Layers.COLOR);
+      break;
+    case "Digit2":
+      switchToLayer(Layers.OBJECT);
+      break;
+    case "Digit3":
+      switchToLayer(Layers.PATH);
+      break;
+    case "Digit4":
+      switchToLayer(Layers.BOUNDARY);
+      break;
+    case "Digit5":
+      switchToLayer(Layers.TEXT);
+      break;
+    case "KeyB":
+      switchToTool(Tools.BRUSH);
+      break;
+    case "KeyG":
+      switchToTool(Tools.FILL);
+      break;
+    case "KeyI":
+      switchToTool(Tools.EYEDROPPER);
+      break;
+    case "KeyE":
+      switchToTool(Tools.ERASER);
+      break;
+    case "KeyL":
+      switchToTool(Tools.LINE);
+      break;
+    case "KeyM":
+      switchToTool(Tools.SELECT);
+      break;
     case "KeyZ":
-      undoLastAction();
+      switchToTool(Tools.ZOOM);
+      break;
+    case "AltLeft":
+    case "AltRight":
+      switchToTool(Tools.EYEDROPPER, true);
+      break;
+    case "MetaLeft":
+    case "MetaRight":
+  // TODO: use different meta keys based on OS
+    case "ControlLeft":
+    case "ControlRight":
+      GLOBAL_STATE.keyState.holdingMeta = true;
       break;
     }
-    return;
-  }
-  switch(e.code) {
-  case "Digit0":
-    switchToLayer(Layers.GRID);
-    break;
-  case "Digit1":
-    switchToLayer(Layers.COLOR);
-    break;
-  case "Digit2":
-    switchToLayer(Layers.OBJECT);
-    break;
-  case "Digit3":
-    switchToLayer(Layers.PATH);
-    break;
-  case "Digit4":
-    switchToLayer(Layers.BOUNDARY);
-    break;
-  case "Digit5":
-    switchToLayer(Layers.TEXT);
-    break;
-  case "KeyB":
-    switchToTool(Tools.BRUSH);
-    break;
-  case "KeyG":
-    switchToTool(Tools.FILL);
-    break;
-  case "KeyI":
-    switchToTool(Tools.EYEDROPPER);
-    break;
-  case "KeyE":
-    switchToTool(Tools.ERASER);
-    break;
-  case "KeyL":
-    switchToTool(Tools.LINE);
-    break;
-  case "KeyM":
-    switchToTool(Tools.SELECT);
-    break;
-  case "KeyZ":
-    switchToTool(Tools.ZOOM);
-    break;
-  case "AltLeft":
-  case "AltRight":
-    switchToTool(Tools.EYEDROPPER, true);
-    break;
-  case "MetaLeft":
-  case "MetaRight":
-  // TODO: use different meta keys based on OS
-  case "ControlLeft":
-  case "ControlRight":
-    GLOBAL_STATE.keyState.holdingMeta = true;
-    break;
-  }
-});
-
-document.addEventListener("keyup", e => {
-  if (e.code == "MetaLeft" || e.code == "MetaRight" || e.code == "ControlLeft" || e.code == "ControlRight") GLOBAL_STATE.keyState.holdingMeta = false;
-  if (e.code == "AltLeft" || e.code == "AltRight") dropTemporaryModes();
-});
-
-// when window loses focus, reset - otherwise, Cmd+Tab to change windows
-// will continue having holdingMeta after coming back
-document.addEventListener("blur", e => {
-  Object.keys(GLOBAL_STATE.keyState).forEach(k => GLOBAL_STATE.keyState[k] = false);
-  Object.keys(GLOBAL_STATE.mouseState).forEach(k => GLOBAL_STATE.mouseState[k] = false);
-  dropTemporaryModes();
-  stopFreeDragging();
-});
-
-document.addEventListener("mouseleave", e => {
-  Object.keys(GLOBAL_STATE.mouseState).forEach(k => GLOBAL_STATE.mouseState[k] = false);
-  dropTemporaryModes();
-  stopFreeDragging();
-});
-
-LAYER_PICKER_BUTTONS.forEach(layerPicker => {
-  layerPicker.addEventListener("click", (e) => {
-    switchToLayer(layerPicker.dataset.layer);
   });
-});
 
-TOOL_PICKER_BUTTONS.forEach(toolPicker => {
-  toolPicker.addEventListener("click", (e) => {
-    switchToTool(toolPicker.dataset.tool);
+  document.addEventListener("keyup", e => {
+    if (e.code == "MetaLeft" || e.code == "MetaRight" || e.code == "ControlLeft" || e.code == "ControlRight") GLOBAL_STATE.keyState.holdingMeta = false;
+    if (e.code == "AltLeft" || e.code == "AltRight") dropTemporaryModes();
   });
-});
 
-COLOR_CONTROL_SWATCHES.forEach(swatch => {
-  // left click - set as primary color
-  swatch.addEventListener("click", (e) => {
-    setPrimaryColor(swatch.dataset.color);
-  });
-  // right click - set as secondary color
-  swatch.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    setSecondaryColor(swatch.dataset.color);
-  });
-});
-
-CANVAS_COLOR_SWATCHES.forEach(swatch => {
-  swatch.addEventListener("click", e => {
-    setCanvasColor(GLOBAL_STATE.layers.GRID.canvasColor, swatch.dataset.color);
-  })
-});
-
-GRID_COLOR_SWATCHES.forEach(swatch => {
-  swatch.addEventListener("click", e => {
-    setGridColor(GLOBAL_STATE.layers.GRID.gridColor, swatch.dataset.color);
-  })
-});
-
-OBJECT_BUTTONS.forEach(btn => {
-  // selecting/unselecting a object/empji/stamp
-  btn.addEventListener("click", () => {
-    setPrimaryObject(btn.dataset.text);
-  });
-  btn.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    setSecondaryObject(btn.dataset.text);
-  });
-});
-
-TEXT_BOLD_DIV.addEventListener("click", (e) => {
-  TEXT_BOLD_DIV.classList.toggle("selected");
-  GLOBAL_STATE.layers.TEXT.bold = !GLOBAL_STATE.layers.TEXT.bold;
-});
-
-TEXT_ITALICS_DIV.addEventListener("click", (e) => {
-  TEXT_ITALICS_DIV.classList.toggle("selected");
-  GLOBAL_STATE.layers.TEXT.italics = !GLOBAL_STATE.layers.TEXT.italics;
-});
-
-TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
-  TEXT_UNDERLINE_DIV.classList.toggle("selected");
-  GLOBAL_STATE.layers.TEXT.underline = !GLOBAL_STATE.layers.TEXT.underline;
-});
-
-HORIZONTAL_GRID_BTN.addEventListener("click", (e) => {
-  positionHexes(GridDirection.HORIZONTAL);
-  GLOBAL_STATE.drawing.gridDirection = GridDirection.HORIZONTAL;
-  HORIZONTAL_GRID_BTN.classList.add("primaryselected");
-  VERTICAL_GRID_BTN.classList.remove("primaryselected");
-});
-
-VERTICAL_GRID_BTN.addEventListener("click", (e) => {
-  positionHexes(GridDirection.VERTICAL);
-  GLOBAL_STATE.drawing.gridDirection = GridDirection.VERTICAL;
-  HORIZONTAL_GRID_BTN.classList.remove("primaryselected");
-  VERTICAL_GRID_BTN.classList.add("primaryselected");
-});
-
-GRID_THICKNESS_SLIDER_DIV.addEventListener("input", e => {
-  const thickness = GRID_THICKNESS_SLIDER_DIV.value;
-  Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
-    hexEntry.hex.setAttribute("stroke-width", `${thickness}px`);
-  });
-  // addToUndoStack({type: "gridThickness", old: previousThickness, new: thickness});
-});
-
-document.getElementById("saveBtn").addEventListener("click", (e) => {
-  exportToSvg();
-});
-
-FILE_UPLOAD_INPUT.addEventListener("change", (e) => {
-  FILE_UPLOAD_INPUT.files[0].text().then(uploadedSvg => importSvg(uploadedSvg));
-});
-
-// SVG events listeners
-// mousedown is the big one that coordinates most of the page
-SVG.addEventListener("mousedown", (e) => {
-  e.preventDefault();
-  if (GLOBAL_STATE.currentTool == Tools.ZOOM && e.buttons < 3) {
-    const zoomFactor = .5 * (e.button == 2 ? 1 : -1);
-    zoom(zoomFactor, e.clientX, e.clientY);
-    return;
-  } else if (e.buttons < 3) { // single left/right click
-    GLOBAL_STATE.mouseState.holdingStdClick = true;
-    // a right mouse down means paint with secondary colors
-    GLOBAL_STATE.mouseState.holdingRightClick = (e.button == 2);
-    if (e.target.classList.contains("hex")) {
-      const hexAtMouse = e.target;
-      handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.clientX, e.clientY, true);
-    }
-  } else if (e.buttons == 4) {
-    GLOBAL_STATE.mouseState.holdingCenterClick = true;
-    SVG.addEventListener("mousemove", freeDragScroll);
-    switchToCursor("move");
-  }
-});
-SVG.addEventListener("mouseover", (e) => {
-  if (GLOBAL_STATE.currentTool == Tools.ERASER && GLOBAL_STATE.mouseState.holdingStdClick) {
-    if (e.target.classList.contains(`eraseable-${GLOBAL_STATE.currentLayer}`)) {
-      let undoData = {};
-      if (e.target.classList.contains("boundary")) {
-        addToUndoStack({
-          type: "boundary",
-          action: "erased",
-          target: {
-            fromCRN: e.target.getAttribute("from-crn"),
-            toCRN: e.target.getAttribute("to-crn"),
-            color: e.target.getAttribute("stroke"),
-          },
-        });
-      } else if (e.target.classList.contains("in-image-text")) {
-        addToUndoStack({
-          type: "text",
-          action: "erased",
-          target: {
-            pt: {
-              x: e.target.getAttribute("x"),
-              y: e.target.getAttribute("y"),
-            },
-            textInput: e.target.textContent,
-            fontSize: e.target.getAttribute("font-size"),
-            strokeWidth: e.target.getAttribute("stroke-width"),
-            fontStyle: e.target.getAttribute("font-style"),
-            textDecoration: e.target.getAttribute("text-decoration"),
-            color: e.target.getAttribute("fill"),
-          },
-        });
-      } else if (e.target.classList.contains("path-highlight")) {
-        const path = SVG.getElementById(`path-${e.target.id}`);
-        addToUndoStack({
-          type: "path",
-          action: "erased",
-          target: {
-            from: [e.target.getAttribute("c1"), e.target.getAttribute("r1")],
-            to: [e.target.getAttribute("c2"), e.target.getAttribute("r2")],
-            lineColor: path.getAttribute("stroke"),
-            highlightColor: e.target.getAttribute("stroke"),
-          },
-        });
-        SVG.removeChild(path);
-      }
-      SVG.removeChild(e.target);
-    }
-  };
-
-  if (GLOBAL_STATE.mouseState.holdingStdClick && e.target.classList.contains("hex")) {
-    const hexAtMouse = e.target;
-    handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.clientX, e.clientY, false);
-  }
-});
-SVG.addEventListener("mouseup", () => {
-  if (GLOBAL_STATE.layers.BOUNDARY.lastCRN) {
-    SVG.removeEventListener("mousemove", drawBoundary);
-  }
-  if (GLOBAL_STATE.mouseState.holdingCenterClick) {
+  // when window loses focus, reset - otherwise, Cmd+Tab to change windows
+  // will continue having holdingMeta after coming back
+  document.addEventListener("blur", e => {
+    Object.keys(GLOBAL_STATE.keyState).forEach(k => GLOBAL_STATE.keyState[k] = false);
+    Object.keys(GLOBAL_STATE.mouseState).forEach(k => GLOBAL_STATE.mouseState[k] = false);
+    dropTemporaryModes();
     stopFreeDragging();
-  }
-  GLOBAL_STATE.mouseState.holdingStdClick = false;
-  GLOBAL_STATE.mouseState.holdingCenterClick = false;
-  GLOBAL_STATE.layers.BOUNDARY.lastCRN = null;
-  GLOBAL_STATE.layers.PATH.activePath = null;
-  GLOBAL_STATE.layers.PATH.lastHexEntry = null;
-});
+  });
 
-SVG.addEventListener("contextmenu", e => e.preventDefault());
-SVG.addEventListener("wheel", e => {
-  e.preventDefault();
-  if (GLOBAL_STATE.keyState.holdingMeta) {
-    let scale = e.deltaY / 100;
-    scale = Math.abs(scale) > .1 ? .1 * e.deltaY / Math.abs(e.deltaY) : scale;
-    zoom(scale, e.clientX, e.clientY);
-  } else {
-    scroll(e.deltaX, e.deltaY);
-  }
-});
-SVG.addEventListener("drop", e => {
-  e.preventDefault();
+  document.addEventListener("mouseleave", e => {
+    Object.keys(GLOBAL_STATE.mouseState).forEach(k => GLOBAL_STATE.mouseState[k] = false);
+    dropTemporaryModes();
+    stopFreeDragging();
+  });
 
-  if (e.dataTransfer.items) {
-    [...e.dataTransfer.items].forEach((item, i) => {
-      if (item.kind === "file") {
-        item.getAsFile().text().then(uploadedSvg => importSvg(uploadedSvg));
+  LAYER_PICKER_BUTTONS.forEach(layerPicker => {
+    layerPicker.addEventListener("click", (e) => {
+      switchToLayer(layerPicker.dataset.layer);
+    });
+  });
+
+  TOOL_PICKER_BUTTONS.forEach(toolPicker => {
+    toolPicker.addEventListener("click", (e) => {
+      switchToTool(toolPicker.dataset.tool);
+    });
+  });
+
+  COLOR_CONTROL_SWATCHES.forEach(swatch => {
+    // left click - set as primary color
+    swatch.addEventListener("click", (e) => {
+      setPrimaryColor(swatch.dataset.color);
+    });
+    // right click - set as secondary color
+    swatch.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      setSecondaryColor(swatch.dataset.color);
+    });
+  });
+
+  CANVAS_COLOR_SWATCHES.forEach(swatch => {
+    swatch.addEventListener("click", e => {
+      setCanvasColor(GLOBAL_STATE.layers.GRID.canvasColor, swatch.dataset.color);
+    })
+  });
+
+  GRID_COLOR_SWATCHES.forEach(swatch => {
+    swatch.addEventListener("click", e => {
+      setGridColor(GLOBAL_STATE.layers.GRID.gridColor, swatch.dataset.color);
+    })
+  });
+
+  OBJECT_BUTTONS.forEach(btn => {
+    // selecting/unselecting a object/empji/stamp
+    btn.addEventListener("click", () => {
+      setPrimaryObject(btn.dataset.text);
+    });
+    btn.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      setSecondaryObject(btn.dataset.text);
+    });
+  });
+
+  TEXT_BOLD_DIV.addEventListener("click", (e) => {
+    TEXT_BOLD_DIV.classList.toggle("selected");
+    GLOBAL_STATE.layers.TEXT.bold = !GLOBAL_STATE.layers.TEXT.bold;
+  });
+
+  TEXT_ITALICS_DIV.addEventListener("click", (e) => {
+    TEXT_ITALICS_DIV.classList.toggle("selected");
+    GLOBAL_STATE.layers.TEXT.italics = !GLOBAL_STATE.layers.TEXT.italics;
+  });
+
+  TEXT_UNDERLINE_DIV.addEventListener("click", (e) => {
+    TEXT_UNDERLINE_DIV.classList.toggle("selected");
+    GLOBAL_STATE.layers.TEXT.underline = !GLOBAL_STATE.layers.TEXT.underline;
+  });
+
+  HORIZONTAL_GRID_BTN.addEventListener("click", (e) => {
+    positionHexes(GridDirection.HORIZONTAL);
+    GLOBAL_STATE.drawing.gridDirection = GridDirection.HORIZONTAL;
+    HORIZONTAL_GRID_BTN.classList.add("primaryselected");
+    VERTICAL_GRID_BTN.classList.remove("primaryselected");
+  });
+
+  VERTICAL_GRID_BTN.addEventListener("click", (e) => {
+    positionHexes(GridDirection.VERTICAL);
+    GLOBAL_STATE.drawing.gridDirection = GridDirection.VERTICAL;
+    HORIZONTAL_GRID_BTN.classList.remove("primaryselected");
+    VERTICAL_GRID_BTN.classList.add("primaryselected");
+  });
+
+  GRID_THICKNESS_SLIDER_DIV.addEventListener("input", e => {
+    const thickness = GRID_THICKNESS_SLIDER_DIV.value;
+    Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
+      hexEntry.hex.setAttribute("stroke-width", `${thickness}px`);
+    });
+    // addToUndoStack({type: "gridThickness", old: previousThickness, new: thickness});
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", (e) => {
+    exportToSvg();
+  });
+
+  // SVG events listeners
+  // mousedown is the big one that coordinates most of the page
+  SVG.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    if (GLOBAL_STATE.currentTool == Tools.ZOOM && e.buttons < 3) {
+      const zoomFactor = .5 * (e.button == 2 ? 1 : -1);
+      zoom(zoomFactor, e.clientX, e.clientY);
+      return;
+    } else if (e.buttons < 3) { // single left/right click
+      GLOBAL_STATE.mouseState.holdingStdClick = true;
+      // a right mouse down means paint with secondary colors
+      GLOBAL_STATE.mouseState.holdingRightClick = (e.button == 2);
+      if (e.target.classList.contains("hex")) {
+        const hexAtMouse = e.target;
+        handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.clientX, e.clientY, true);
       }
-    });
-  } else {
-    [...e.dataTransfer.files].forEach((file, i) => {
-      file.text().then(uploadedSvg => importSvg(uploadedSvg));
-    });
-  }
-});
-SVG.addEventListener("dragover", e => {
-  e.preventDefault();
-});
+    } else if (e.buttons == 4) {
+      GLOBAL_STATE.mouseState.holdingCenterClick = true;
+      SVG.addEventListener("mousemove", freeDragScroll);
+      switchToCursor("move");
+    }
+  });
+  SVG.addEventListener("mouseover", (e) => {
+    if (GLOBAL_STATE.currentTool == Tools.ERASER && GLOBAL_STATE.mouseState.holdingStdClick) {
+      if (e.target.classList.contains(`eraseable-${GLOBAL_STATE.currentLayer}`)) {
+        let undoData = {};
+        if (e.target.classList.contains("boundary")) {
+          addToUndoStack({
+            type: "boundary",
+            action: "erased",
+            target: {
+              fromCRN: e.target.getAttribute("from-crn"),
+              toCRN: e.target.getAttribute("to-crn"),
+              color: e.target.getAttribute("stroke"),
+            },
+          });
+        } else if (e.target.classList.contains("in-image-text")) {
+          addToUndoStack({
+            type: "text",
+            action: "erased",
+            target: {
+              pt: {
+                x: e.target.getAttribute("x"),
+                y: e.target.getAttribute("y"),
+              },
+              textInput: e.target.textContent,
+              fontSize: e.target.getAttribute("font-size"),
+              strokeWidth: e.target.getAttribute("stroke-width"),
+              fontStyle: e.target.getAttribute("font-style"),
+              textDecoration: e.target.getAttribute("text-decoration"),
+              color: e.target.getAttribute("fill"),
+            },
+          });
+        } else if (e.target.classList.contains("path-highlight")) {
+          const path = SVG.getElementById(`path-${e.target.id}`);
+          addToUndoStack({
+            type: "path",
+            action: "erased",
+            target: {
+              from: [e.target.getAttribute("c1"), e.target.getAttribute("r1")],
+              to: [e.target.getAttribute("c2"), e.target.getAttribute("r2")],
+              lineColor: path.getAttribute("stroke"),
+              highlightColor: e.target.getAttribute("stroke"),
+            },
+          });
+          SVG.removeChild(path);
+        }
+        SVG.removeChild(e.target);
+      }
+    };
+
+    if (GLOBAL_STATE.mouseState.holdingStdClick && e.target.classList.contains("hex")) {
+      const hexAtMouse = e.target;
+      handleHexInteraction(hexAtMouse.getAttribute("c"), hexAtMouse.getAttribute("r"), e.clientX, e.clientY, false);
+    }
+  });
+  SVG.addEventListener("mouseup", () => {
+    if (GLOBAL_STATE.layers.BOUNDARY.lastCRN) {
+      SVG.removeEventListener("mousemove", drawBoundary);
+    }
+    if (GLOBAL_STATE.mouseState.holdingCenterClick) {
+      stopFreeDragging();
+    }
+    GLOBAL_STATE.mouseState.holdingStdClick = false;
+    GLOBAL_STATE.mouseState.holdingCenterClick = false;
+    GLOBAL_STATE.layers.BOUNDARY.lastCRN = null;
+    GLOBAL_STATE.layers.PATH.activePath = null;
+    GLOBAL_STATE.layers.PATH.lastHexEntry = null;
+  });
+
+  SVG.addEventListener("contextmenu", e => e.preventDefault());
+  SVG.addEventListener("wheel", e => {
+    e.preventDefault();
+    if (GLOBAL_STATE.keyState.holdingMeta) {
+      let scale = e.deltaY / 100;
+      scale = Math.abs(scale) > .1 ? .1 * e.deltaY / Math.abs(e.deltaY) : scale;
+      zoom(scale, e.clientX, e.clientY);
+    } else {
+      scroll(e.deltaX, e.deltaY);
+    }
+  });
+}
 
 /*********************************
  * INTERACTING WITH GLOBAL STATE *
@@ -540,6 +550,9 @@ function switchToLayer(layer) {
   });
   document.querySelectorAll(`.layer-${previousLayer}`).forEach(e => {
     e.classList.add("no-pointer-events");
+  });
+  document.querySelectorAll(`.layer-${layer}`).forEach(e => {
+    e.classList.remove("no-pointer-events");
   });
   switchToTool(LAYER_TOOL_COMPATIBILITY[layer][0]);
   setPrimaryColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor);
@@ -680,7 +693,7 @@ function setGridColor(previousGridColor, color) {
   addToUndoStack({type: "gridColor", old: previousGridColor, new: color});
 }
 
-function colorHex(c, r, fillColor=null) {
+function colorHex(c, r, fillColor=null, isFloodFill=false) {
   if (!fillColor) {
     fillColor = GLOBAL_STATE.mouseState.holdingRightClick ? GLOBAL_STATE.layers.COLOR.secondaryColor : GLOBAL_STATE.layers.COLOR.primaryColor;
   }
@@ -689,8 +702,9 @@ function colorHex(c, r, fillColor=null) {
     return;
   }
   GLOBAL_STATE.drawing.hexes[`${c},${r}`].hex.setAttribute("fill", fillColor);
-  // TODO: undo for floodfill
-  addToUndoStack({type: "color", old: oldFillColor, new: fillColor, target: [c, r]});
+  if (!isFloodFill) {
+    addToUndoStack({type: "color", old: oldFillColor, new: fillColor, target: [c, r]});
+  }
   // easy way to test hex neighbor logic
   // getHexNeighbors(c, r).forEach(h => {
   //   console.log(h)
@@ -716,7 +730,8 @@ function floodFill(startC, startR, fn) {
       visited.push(stringedCoords);
     });
   }
-  visited.forEach(s => fn(...s.split(",")));
+  visited.forEach(s => fn(...s.split(","), null, true));
+  // addToUndoStack({type: "floodFill", old: oldFillColor, new: fillColor, target: [c, r]});
 }
 
 function placeObjectOnHex(c, r, objectToUse=null) {
@@ -1210,6 +1225,7 @@ function importSvg(svgStr, shouldPersist=true) {
     GLOBAL_STATE.drawing.hexes[`${c},${r}`].hexObject = hexObject;
   });
   switchToLayer(Layers.COLOR);
+  clearWelcomeScreen();
   // if (shouldPersist) {
   //   saveToLocalStorage()
   // }
@@ -1231,7 +1247,20 @@ function exportToSvg() {
   document.body.removeChild(downloadLink);
 }
 
+function clearWelcomeScreen() {
+  document.getElementById("welcomeContainer").classList.add("hidden");
+  document.getElementById("hexaggon").classList.remove("frosted");
+}
+
+function start(e) {
+  clearWelcomeScreen();
+  document.removeEventListener("click", start);
+  registerEventListeners();
+}
+
+registerDropUploadEventHandlers();
 svgInit();
+document.addEventListener("click", start);
 // Object.keys(localStorage).forEach(k => {
 //   if (k.startsWith("image-")) {
 //     const div = document.createElement('div');
