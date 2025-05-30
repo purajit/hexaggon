@@ -7,6 +7,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.svg">
 </head>
 <body>
+  <div id="hexaggon" class="frosted">
   <div class="toolbar flex-row gappy">
     <div class="flex-column gappy">
       <div id="layerPicker" class="flex-column overlaid">
@@ -138,7 +139,8 @@
         x
         <input id="gridCols" class="grid-dimension" type="text"/>
       </div>
-      Canvas color
+      <details>
+      <summary>Canvas color</summary>
       <div id="canvasColor" class="flex-row gappy">
         <div class="flex-column gappy">
           <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
@@ -169,7 +171,9 @@
           <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
         </div>
       </div>
-      Grid color
+      </details>
+      <details>
+      <summary>Grid color</summary>
       <div id="gridColor" class="flex-row gappy">
         <div class="flex-column gappy">
           <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
@@ -200,6 +204,7 @@
           <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
         </div>
       </div>
+      </details>
     </div>
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="SETTINGS">
       <!-- TODO: invert drag scrolling -->
@@ -217,6 +222,17 @@
     </div>
     <div id="allFilesList" class="flex-column overlaid">
     </div>
+  </div>
+  </div>
+  <div id="welcomeContainer">
+  <div id="welcome" class="flex-column gappy">
+    <div class="h1">
+    Welcome to Hexaggon!
+    </div>
+    <div class="normaltext">
+      Click anywhere to start a new drawing, or drop in an exported map.
+    </div>
+  </div>
   </div>
 </body>
 <script src="index.js"></script>
