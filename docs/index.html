@@ -28,10 +28,10 @@
     </div>
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="COLOR">
       <svg xmlns='http://www.w3.org/2000/svg'  width='45' height='45' viewport='0 0 45 45'>
-        <rect id="chosenSecondaryColor" x="0" y="0" width="30" height="30" fill="#7eaaad" stroke="grey"/>
-        <rect id="chosenPrimaryColor" x="15" y="15" width="30" height="30" fill="#b8895f" stroke="grey"/>
+        <rect id="chosenSecondaryColor" x="0" y="0" width="30" height="30" stroke="grey"/>
+        <rect id="chosenPrimaryColor" x="15" y="15" width="30" height="30" stroke="grey"/>
       </svg>
-      <div class="flex-row gappy">
+      <div id="colorControlPalette" class="flex-row gappy">
         <div class="flex-column gappy">
           <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
           <!-- blues -->
@@ -77,10 +77,10 @@
       </div>
       <div class="flex-row gappy">
         <div class="object-btn btn border-box" data-text="🌋">🌋</div>
-        <div class="object-btn btn border-box secondaryselected" data-text="🌊">🌊</div>
+        <div class="object-btn btn border-box" data-text="🌊">🌊</div>
       </div>
       <div class="flex-row gappy">
-        <div class="object-btn btn border-box primaryselected" data-text="🌽">🌽</div>
+        <div class="object-btn btn border-box" data-text="🌽">🌽</div>
         <div class="object-btn btn border-box" data-text="🌾">🌾</div>
       </div>
       <div class="flex-row gappy">
@@ -106,25 +106,100 @@
     </div>
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="TEXT">
       <div class="flex-row gappy">
-        <input id="textFontSize" type="number" class="border-box" value="45"></input>
+        <input id="textFontSize" type="number" class="border-box"></input>
         <div id="textBold" class="btn border-box">B️</div>
         <div id="textItalics" class="btn border-box">I</div>
         <div id="textUnderline" class="btn border-box">U</div>
       </div>
       <input id="textInput" placeholder="Text to insert"></input>
     </div>
-    <div class="layer-control control-panel flex-column gappy overlaid" data-control="GRIDDIRECTION">
-      <!-- TODO: grid line thickness -->
-      <button id="horizontalGridBtn" class="hexagon-btn btn border-box primaryselected" title="Use a horizontal grid. DRAWING WILL NOT BE PRESERVED">
-        <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/3000/svg" transform="rotate(90)">
-          <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z"\/>
-        </svg>
-      </button>
-      <button id="verticalGridBtn" class="hexagon-btn btn border-box" title="Use a vertical grid. DRAWING WILL NOT BE PRESERVED">
-        <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z"/>
-        </svg>
-      </button>
+    <div class="layer-control control-panel flex-column gappy overlaid" data-control="GRID">
+      Orientation
+      <div class="flex-row gappy">
+        <button id="horizontalGridBtn" class="hexagon-btn btn border-box" title="Use a horizontal grid">
+          <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/3000/svg" transform="rotate(90)">
+            <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z"\/>
+          </svg>
+        </button>
+        <button id="verticalGridBtn" class="hexagon-btn btn border-box" title="Use a vertical grid">
+          <svg width="30" height="30" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z"/>
+          </svg>
+        </button>
+      </div>
+      Grid thickness
+      <div class="flex-row gappy">
+        <input id="gridThicknessSlider" type="range" min="0" max="20" step="1"/>
+        <label class="visually-hidden" for="gridThicknessSlider">Volume</label>
+      </div>
+      Dimensions
+      <div class="flex-row gappy">
+        <input id="gridRows" class="grid-dimension" type="text"/>
+        x
+        <input id="gridCols" class="grid-dimension" type="text"/>
+      </div>
+      Canvas color
+      <div id="canvasColor" class="flex-row gappy">
+        <div class="flex-column gappy">
+          <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
+          <!-- blues -->
+          <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
+          <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
+          <!-- greens -->
+          <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
+          <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
+          <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
+          <!-- browns oranges -->
+          <div class="swatch" style="background:#943636" data-color="#943636"></div>
+          <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
+          <div class="swatch" style="background:#908a07" data-color="#908a07"></div>
+          <div class="swatch" style="background:#574d39" data-color="#574d39"></div>
+          <div class="swatch" style="background:#000000" data-color="#000000"></div>
+        </div>
+        <div class="flex-column gappy">
+          <div class="swatch" style="background:#535272" data-color="#535272"></div>
+          <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
+          <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
+          <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
+          <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
+          <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
+          <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
+          <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
+          <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
+          <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
+        </div>
+      </div>
+      Grid color
+      <div id="gridColor" class="flex-row gappy">
+        <div class="flex-column gappy">
+          <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
+          <!-- blues -->
+          <div class="swatch" style="background:#69394d" data-color="#69394d"></div>
+          <div class="swatch" style="background:#6a8588" data-color="#6a8588"></div>
+          <!-- greens -->
+          <div class="swatch" style="background:#3d5a40" data-color="#3d5a40"></div>
+          <div class="swatch" style="background:#739d77" data-color="#739d77"></div>
+          <div class="swatch" style="background:#aab34c" data-color="#aab34c"></div>
+          <!-- browns oranges -->
+          <div class="swatch" style="background:#943636" data-color="#943636"></div>
+          <div class="swatch" style="background:#b8895f" data-color="#b8895f"></div>
+          <div class="swatch" style="background:#908a07" data-color="#908a07"></div>
+          <div class="swatch" style="background:#574d39" data-color="#574d39"></div>
+          <div class="swatch" style="background:#000000" data-color="#000000"></div>
+        </div>
+        <div class="flex-column gappy">
+          <div class="swatch" style="background:#535272" data-color="#535272"></div>
+          <div class="swatch" style="background:#7eaaad" data-color="#7eaaad"></div>
+          <div class="swatch" style="background:#4a6b4e" data-color="#4a6b4e"></div>
+          <div class="swatch" style="background:#91b985" data-color="#91b985"></div>
+          <div class="swatch" style="background:#bfc080" data-color="#bfc080"></div>
+          <div class="swatch" style="background:#d35540" data-color="#d35540"></div>
+          <div class="swatch" style="background:#e8aa54" data-color="#e8aa54"></div>
+          <div class="swatch" style="background:#e4d250" data-color="#e4d250"></div>
+          <div class="swatch" style="background:#c4b9a5" data-color="#c4b9a5"></div>
+          <div class="swatch" style="background:#ffffff" data-color="#ffffff"></div>
+        </div>
+      </div>
     </div>
     <div class="layer-control control-panel flex-column gappy overlaid" data-control="SETTINGS">
       <!-- TODO: invert drag scrolling -->
