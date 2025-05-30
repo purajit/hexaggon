@@ -6,6 +6,12 @@
   src: url(Merriweather.ttf) format("truetype");
 }
 
+* {
+    margin: 0;
+    padding: 0;
+}
+
+
 :root {
     color-scheme: light dark;
     --background-color: light-dark(#ffffff, #1b1b1b);
@@ -137,8 +143,14 @@ html, body {
 /* The whole entire hex map */
 #minimap {
     height: 100px;
-    box-shadow: 0 0 10px 10px var(--shadow-color);
-    background: var(--shadow-color);
+    background: var(--background-color);
+    /* By default, SVG elements are inline elements, and they sort of behave like text.
+     * Hence, they are subject to line-height, which defaults to non-zero, which adds
+     * height to the element. So, either set line-height of the container to 0, or make
+     * the SVG display block/inline-block
+     * https://stackoverflow.com/questions/75751593/why-there-is-additional-4px-height-for-div-when-there-is-svg-inside-it
+     */
+    display: block;
 }
 
 #hexmap {
