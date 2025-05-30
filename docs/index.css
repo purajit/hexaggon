@@ -6,6 +6,13 @@
   src: url(Merriweather.ttf) format("truetype");
 }
 
+:root {
+    color-scheme: light dark;
+    --background-color: light-dark(#ffffff, #1b1b1b);
+    --font-color: light-dark(#000000, #ffffff);
+    --disabled-btn-color: light-dark(#ccc, #444);
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -35,7 +42,8 @@ html, body {
     top: 0;
 }
 #welcome {
-    background: white;
+    color: var(--font-color);
+    background: var(--background-color);
     opacity: 80%;
     border-radius: 10px;
     padding: 40px;
@@ -78,7 +86,8 @@ html, body {
 .btn {
     width: 35px;
     height: 35px;
-    background-color: white;
+    color: var(--font-color);
+    background-color: var(--background-color);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -154,7 +163,7 @@ html, body {
 .disabled-btn {
     cursor: default !important;
     filter: saturate(0%);
-    background: #ccc;
+    background: var(--disabled-btn-color);
 }
 
 .flex-row {
@@ -197,7 +206,7 @@ html, body {
     overflow: scroll;
     height: fit-content;
     width: fit-content;
-    background: rgba(255, 255, 255);
+    background: var(--background-color);
     align-items: center;
     box-shadow: 0 0 1px 1px #ccc;
 }
