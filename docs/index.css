@@ -13,6 +13,7 @@
     --disabled-btn-color: light-dark(#ccc, #444);
     --shadow-color: light-dark(#ccc, #444);
     --selected-btn-color: light-dark(#91b985, #4a6b4e);
+    --selected-border-color: light-dark(#000000, #ffffff);
 }
 
 html, body {
@@ -130,7 +131,7 @@ html, body {
     width: 21px;
     height: 21px;
     cursor: pointer;
-    border: 1px solid grey;
+    border: 1px solid var(--shadow-color);
 }
 
 /* The whole entire hex map */
@@ -184,11 +185,11 @@ html, body {
 }
 
 .primaryselected {
-    border: 3px solid black;
+    border: 3px solid var(--selected-border-color);
 }
 
 .secondaryselected {
-    border: 3px dotted black;
+    border: 3px dotted var(--selected-border-color);
 }
 
 .border-box {
