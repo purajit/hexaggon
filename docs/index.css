@@ -11,6 +11,8 @@
     --background-color: light-dark(#ffffff, #1b1b1b);
     --font-color: light-dark(#000000, #ffffff);
     --disabled-btn-color: light-dark(#ccc, #444);
+    --shadow-color: light-dark(#ccc, #444);
+    --selected-btn-color: light-dark(#91b985, #4a6b4e);
 }
 
 html, body {
@@ -96,7 +98,7 @@ html, body {
     border: none;
 }
 .btn.selected {
-    background: #91b985;
+    background: var(--selected-btn-color);
 }
 
 .btn > label {
@@ -134,8 +136,8 @@ html, body {
 /* The whole entire hex map */
 #minimap {
     height: 100px;
-    box-shadow: 0 0 10px 10px #ccc;
-    background: #ccc;
+    box-shadow: 0 0 10px 10px var(--shadow-color);
+    background: var(--shadow-color);
 }
 
 #hexmap {
@@ -208,7 +210,7 @@ html, body {
     width: fit-content;
     background: var(--background-color);
     align-items: center;
-    box-shadow: 0 0 1px 1px #ccc;
+    box-shadow: 0 0 1px 1px var(--shadow-color);
 }
 
 
@@ -259,7 +261,7 @@ input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   height: 1.5rem;
   width: 0.5rem;
-  background: #ffffff;
+  background: var(--background-color);
   border: 1px solid;
   margin-top: -5px;
   border-radius: 3px;
@@ -274,7 +276,7 @@ input[type=range]::-moz-range-thumb {
   -webkit-appearance: none;
   height: 1.5rem;
   width: 0.5rem;
-  background: #ffffff;
+  background: var(--background-color);
   border: 1px solid;
   border-radius: 3px;
   cursor: pointer;
