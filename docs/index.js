@@ -153,6 +153,8 @@ const GLOBAL_STATE = {
  *   togther                                                            *
  ************************************************************************/
 const SVG = document.getElementById("hexmap");
+const MINIMAP = document.getElementById("minimap");
+const MINIMAP_VIEWBOX = document.getElementById("minimapViewBox");
 const COLOR_CONTROL_SWATCHES = document.querySelectorAll("#colorControlPalette .swatch");
 const CANVAS_COLOR_SWATCHES = document.querySelectorAll("#canvasColor .swatch");
 const GRID_COLOR_SWATCHES = document.querySelectorAll("#gridColor .swatch");
@@ -407,6 +409,12 @@ function registerEventListeners() {
       if (e.target.classList.contains(`eraseable-${GLOBAL_STATE.currentLayer}`)) {
         let undoData = {};
         if (e.target.classList.contains("boundary")) {
+          MINIMAP.querySelectorAll(".boundary").forEach(t => {
+            if (t.getAttribute("from-crn") == e.target.getAttribute("from-crn") && t.getAttribute("to-crn") == e.target.getAttribute("to-crn") && t.getAttribute("stroke") == e.target.getAttribute("stroke")) {
+              MINIMAP.removeChild(t);
+            }
+          });
+
           addToUndoStack({
             type: "boundary",
             action: "erased",
@@ -619,6 +627,12 @@ function scroll(xdiff, ydiff) {
   const viewBox = SVG.getAttribute("viewBox") || `0 0 ${window.innerWidth} ${window.innerHeight}`;
   const [x, y, width, height] = viewBox.split(" ").map(Number);
   SVG.setAttribute("viewBox", `${x + xdiff} ${y + ydiff} ${width} ${height}`);
+  MINIMAP_VIEWBOX.setAttribute("x", x + xdiff);
+  MINIMAP_VIEWBOX.setAttribute("y", y + ydiff);
+  MINIMAP_VIEWBOX.setAttribute("width", width);
+  MINIMAP_VIEWBOX.setAttribute("height", height);
+  MINIMAP.removeChild(MINIMAP_VIEWBOX);
+  MINIMAP.appendChild(MINIMAP_VIEWBOX);
 }
 
 function zoom(scale, mouseX, mouseY) {
@@ -636,6 +650,12 @@ function zoom(scale, mouseX, mouseY) {
   const x2 = pt.x - xPropW * width2;
   const y2 = pt.y - yPropH * height2;
   SVG.setAttribute("viewBox", `${x2} ${y2} ${width2} ${height2}`);
+  MINIMAP_VIEWBOX.setAttribute("x", x2);
+  MINIMAP_VIEWBOX.setAttribute("y", y2);
+  MINIMAP_VIEWBOX.setAttribute("width", width2);
+  MINIMAP_VIEWBOX.setAttribute("height", height2);
+  MINIMAP.removeChild(MINIMAP_VIEWBOX);
+  MINIMAP.appendChild(MINIMAP_VIEWBOX);
 }
 
 function getHexNeighbors(_c, _r) {
@@ -675,8 +695,11 @@ function setCanvasColor(previousCanvasColor, color) {
     return;
   }
   Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
-    if (hexEntry.hex.getAttribute("fill") == previousCanvasColor)
+    if (hexEntry.hex.getAttribute("fill") == previousCanvasColor) {
       hexEntry.hex.setAttribute("fill", color);
+    }
+    hexEntry.minihex.setAttribute("fill", color);
+    hexEntry.minihex.setAttribute("stroke", color);
   });
   GLOBAL_STATE.layers.GRID.canvasColor = color;
   SVG.setAttribute("canvasColor", color);
@@ -686,6 +709,7 @@ function setCanvasColor(previousCanvasColor, color) {
 function setGridColor(previousGridColor, color) {
   Object.values(GLOBAL_STATE.drawing.hexes).forEach(hexEntry => {
     hexEntry.hex.setAttribute("stroke", color);
+    hexEntry.minihex.setAttribute("stroke", color);
   });
   GRID_SAMPLE_DIVS.forEach(e => e.setAttribute("stroke", color))
   GLOBAL_STATE.layers.GRID.gridColor = color;
@@ -771,6 +795,9 @@ function drawBoundaryLine(fromCRN, toCRN, color) {
   line.classList.add(`eraseable-${Layers.BOUNDARY}`);
   line.classList.add(`layer-${Layers.BOUNDARY}`);
   SVG.appendChild(line);
+  minimapLine = line.cloneNode(true);
+  minimapLine.setAttribute("stroke-width", 20);
+  MINIMAP.appendChild(minimapLine);
   addToUndoStack({type: "boundary", action: "added", target: {fromCRN: fromCRNStr, toCRN: toCRNStr, color}});
 }
 
@@ -1029,6 +1056,7 @@ function positionHexes(gridDirection) {
     hexEntry.hex.setAttribute("x", x);
     hexEntry.hex.setAttribute("y", y);
     hexEntry.hex.setAttribute("points", points.join(" "));
+    hexEntry.minihex.setAttribute("points", points.join(" "));
     hexEntry.hexObject.setAttribute("x", x);
     hexEntry.hexObject.setAttribute("y", y);
   });
@@ -1053,10 +1081,17 @@ function drawHex(c, r) {
   hexObject.classList.add("hex-object");
   hexObject.classList.add(`layer-${Layers.OBJECT}`);
 
-  GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, hexObject, x: null, y: null, c, r};
-
   SVG.appendChild(hex);
   SVG.appendChild(hexObject);
+
+  const minihex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+  minihex.setAttribute("stroke-width", "1px");
+  minihex.setAttribute("c", c);
+  minihex.setAttribute("r", r);
+  minihex.classList.add("minihex");
+  MINIMAP.appendChild(minihex);
+
+  GLOBAL_STATE.drawing.hexes[`${c},${r}`] = {hex, hexObject, minihex, x: null, y: null, c, r};
 }
 
 function svgInit() {
@@ -1085,10 +1120,22 @@ function svgInit() {
 
   switchToLayer(Layers.COLOR);
   const bbox = SVG.getBBox();
+  const midX = (bbox.width - window.innerWidth) / 2;
+  const midY = (bbox.height - window.innerHeight) / 2;
   SVG.setAttribute(
     "viewBox",
-    `${(bbox.width - window.innerWidth) / 2} ${(bbox.height - window.innerHeight) / 2} ${window.innerWidth} ${window.innerHeight}`
+    `${midX} ${midY} ${window.innerWidth} ${window.innerHeight}`
   );
+
+  const minibbox = MINIMAP.getBBox();
+  MINIMAP.setAttribute("viewBox", `${minibbox.x} ${minibbox.y} ${minibbox.width} ${minibbox.height}`);
+  MINIMAP_VIEWBOX.setAttribute("x", midX);
+  MINIMAP_VIEWBOX.setAttribute("y", midY);
+  MINIMAP_VIEWBOX.setAttribute("width", window.innerWidth);
+  MINIMAP_VIEWBOX.setAttribute("height", window.innerHeight);
+  MINIMAP.removeChild(MINIMAP_VIEWBOX);
+  MINIMAP.appendChild(MINIMAP_VIEWBOX);
+
   GLOBAL_STATE.pauseUndoStack = false;
   // smolbean grid for inspection ease
   // for (let c = 3; c < 13; c++) {
@@ -1139,6 +1186,11 @@ function undoLastAction() {
       SVG.querySelectorAll(".boundary").forEach(t => {
         if (t.getAttribute("from-crn") == target.fromCRN && t.getAttribute("to-crn") == target.toCRN && t.getAttribute("stroke") == target.color) {
           SVG.removeChild(t);
+        }
+      });
+      MINIMAP.querySelectorAll(".boundary").forEach(t => {
+        if (t.getAttribute("from-crn") == target.fromCRN && t.getAttribute("to-crn") == target.toCRN && t.getAttribute("stroke") == target.color) {
+          MINIMAP.removeChild(t);
         }
       });
     } else if (action == "erased") {

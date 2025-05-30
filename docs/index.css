@@ -104,7 +104,7 @@ html, body {
 }
 
 .bottom {
-    bottom: 0;
+    bottom: 0 !important;
 }
 
 .frosted {
@@ -123,8 +123,13 @@ html, body {
 }
 
 /* The whole entire hex map */
+#minimap {
+    height: 100px;
+    box-shadow: 0 0 10px 10px #ccc;
+    background: #ccc;
+}
+
 #hexmap {
-    display: block;
     width: 100vw;
     height: 100vh;
 }
@@ -132,7 +137,6 @@ html, body {
 #textFontSize {
     width: 60px;
     height: 35px;
-    paadding: 0;
     margin: 0;
     font-size: 20px;
     text-align: right;
@@ -200,7 +204,8 @@ html, body {
 
 
 .right-aligned {
-    right: 0%;
+    top: 0;
+    right: 0;
 }
 
 
