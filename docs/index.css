@@ -134,7 +134,7 @@ body {
 }
 
 .bottom {
-  bottom: 0 !important;
+  bottom: 0;
 }
 
 .frosted {
@@ -184,10 +184,12 @@ body {
 
 /* Composible properties */
 .hidden {
+  /* eslint-disable-next-line css/no-important */
   display: none !important;
 }
 
 .disabled-btn {
+  /* eslint-disable-next-line css/no-important */
   cursor: default !important;
   filter: saturate(0%);
   background: var(--disabled-btn-color);
@@ -224,6 +226,7 @@ body {
 }
 
 .allow-pointer-events {
+  /* eslint-disable-next-line css/no-important */
   pointer-events: auto !important;
 }
 
@@ -300,6 +303,7 @@ input[type="range"]:focus::-moz-range-thumb {
 }
 
 .visually-hidden {
+  /* eslint-disable-next-line css/no-important */
   position: absolute !important;
   height: 1px;
   width: 1px;
