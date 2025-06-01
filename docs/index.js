@@ -1698,6 +1698,7 @@ function saveToLocalStorage() {
   localStorage.setItem(`image-${GLOBAL_STATE.drawing.uuid}`, SVG.outerHTML);
 }
 
+// eslint-disable-next-line no-unused-vars
 function loadFromLocalStorage(uuid) {
   importSvg(localStorage.getItem(`image-${uuid}`), false);
 }
