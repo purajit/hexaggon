@@ -161,11 +161,6 @@ const GLOBAL_STATE = {
  ************************************************************************/
 // the main drawing
 const SVG = document.getElementById("hexmap");
-const SVG_HEX_LAYER = SVG.getElementById("hexLayer") || SVG;
-const SVG_OBJECT_LAYER = SVG.getElementById("objectLayer");
-const SVG_PATH_LAYER = SVG.getElementById("pathLayer");
-const SVG_BOUNDARY_LAYER = SVG.getElementById("boundaryLayer");
-const SVG_TEXT_LAYER = SVG.getElementById("textLayer");
 const MINIMAP = document.getElementById("minimap");
 const MINIMAP_PREVIEW = document.getElementById("minimapPreview");
 const MINIMAP_VIEWBOX = document.getElementById("minimapViewBox");
@@ -437,7 +432,23 @@ function registerEventListeners() {
     if (GLOBAL_STATE.currentTool == Tools.ERASER && GLOBAL_STATE.mouseState.holdingStdClick) {
       if (e.target.classList.contains(`eraseable-${GLOBAL_STATE.currentLayer}`)) {
         let undoData = {};
-        if (e.target.classList.contains("boundary")) {
+        if (e.target.classList.contains("path-highlight")) {
+          const path = SVG.getElementById(`path-${e.target.id}`);
+          console.log(e.target);
+          getSVGLayer(Layers.PATH).removeChild(e.target);
+          getSVGLayer(Layers.PATH).removeChild(path);
+          addToUndoStack({
+            type: "path",
+            action: "erased",
+            target: {
+              from: [e.target.getAttribute("c1"), e.target.getAttribute("r1")],
+              to: [e.target.getAttribute("c2"), e.target.getAttribute("r2")],
+              lineColor: path.getAttribute("stroke"),
+              highlightColor: e.target.getAttribute("stroke"),
+            },
+          });
+        } if (e.target.classList.contains("boundary")) {
+          getSVGLayer(Layers.BOUNDARY).removeChild(e.target);
           MINIMAP_PREVIEW.querySelectorAll(".boundary").forEach(t => {
             if (t.getAttribute("from-crn") == e.target.getAttribute("from-crn") && t.getAttribute("to-crn") == e.target.getAttribute("to-crn") && t.getAttribute("stroke") == e.target.getAttribute("stroke")) {
               MINIMAP_PREVIEW.removeChild(t);
@@ -454,6 +465,7 @@ function registerEventListeners() {
             },
           });
         } else if (e.target.classList.contains("in-image-text")) {
+          getSVGLayer(Layers.TEXT).removeChild(e.target);
           addToUndoStack({
             type: "text",
             action: "erased",
@@ -470,21 +482,7 @@ function registerEventListeners() {
               color: e.target.getAttribute("fill"),
             },
           });
-        } else if (e.target.classList.contains("path-highlight")) {
-          const path = SVG.getElementById(`path-${e.target.id}`);
-          addToUndoStack({
-            type: "path",
-            action: "erased",
-            target: {
-              from: [e.target.getAttribute("c1"), e.target.getAttribute("r1")],
-              to: [e.target.getAttribute("c2"), e.target.getAttribute("r2")],
-              lineColor: path.getAttribute("stroke"),
-              highlightColor: e.target.getAttribute("stroke"),
-            },
-          });
-          SVG.removeChild(path);
         }
-        SVG.removeChild(e.target);
       }
     };
 
@@ -603,10 +601,10 @@ function switchToLayer(layer) {
       b.classList.remove("selected");
     }
   });
-  document.querySelectorAll(`.layer-${previousLayer}`).forEach(e => {
+  document.querySelectorAll(`.layer-${previousLayer}, .eraseable-${previousLayer}`).forEach(e => {
     e.classList.add("no-pointer-events");
   });
-  document.querySelectorAll(`.layer-${layer}`).forEach(e => {
+  document.querySelectorAll(`.layer-${layer}, .eraseable-${layer}`).forEach(e => {
     e.classList.remove("no-pointer-events");
   });
   switchToTool(LAYER_TOOL_COMPATIBILITY[layer][0]);
@@ -998,8 +996,8 @@ function drawLineAndHighlight(fromHexEntry, toHexEntry, lineColor, highlightColo
   lineHighlight.id = id;
 
   addToUndoStack({type: "path", action: "added", target: {from: [fromHexEntry.c, fromHexEntry.r], to: [toHexEntry.c, toHexEntry.r], lineColor, highlightColor}});
-  SVG_PATH_LAYER.appendChild(lineHighlight);
-  SVG_PATH_LAYER.appendChild(line);
+  getSVGLayer(Layers.PATH).appendChild(lineHighlight);
+  getSVGLayer(Layers.PATH).appendChild(line);
 }
 
 function drawPath(hexEntry) {
@@ -1110,7 +1108,7 @@ function drawBoundaryLine(fromCRN, toCRN, color) {
   line.classList.add("boundary");
   line.classList.add(`eraseable-${Layers.BOUNDARY}`);
   line.classList.add(`layer-${Layers.BOUNDARY}`);
-  SVG_BOUNDARY_LAYER.appendChild(line);
+  getSVGLayer(Layers.BOUNDARY).appendChild(line);
   minimapLine = line.cloneNode(true);
   minimapLine.setAttribute("stroke-width", 20);
   MINIMAP_PREVIEW.appendChild(minimapLine);
@@ -1163,8 +1161,7 @@ function placeTextWithConfig(pt, textInput, fontSize, strokeWidth, fontStyle, te
     action: "added",
     target: {pt, textInput, fontSize, strokeWidth, fontStyle, textDecoration, color}
   });
-  console.log(SVG_TEXT_LAYER, textbox)
-  SVG_TEXT_LAYER.appendChild(textbox);
+  getSVGLayer(Layers.TEXT).appendChild(textbox);
 }
 
 
@@ -1278,6 +1275,10 @@ function getHexVertixes(c, r, gridDirection) {
 /***********
  * DRAWING *
  ***********/
+function getSVGLayer(layer) {
+  return SVG.getElementById(`${layer}Layer`) || SVG;
+}
+
 function positionHexes(gridDirection) {
   for (let c = 0; c < GLOBAL_STATE.drawing.hexEntries.length; c++) {
     for (let r = 0; r < GLOBAL_STATE.drawing.hexEntries[c].length; r++) {
@@ -1316,8 +1317,8 @@ function drawHex(c, r) {
   hexObject.classList.add("hex-object");
   hexObject.classList.add(`layer-${Layers.OBJECT}`);
 
-  SVG_HEX_LAYER.appendChild(hex);
-  SVG_OBJECT_LAYER.appendChild(hexObject);
+  getSVGLayer("HEX").appendChild(hex);
+  getSVGLayer(Layers.OBJECT).appendChild(hexObject);
 
   return {hex, hexObject, x: null, y: null, c, r};
 }
@@ -1396,6 +1397,8 @@ function svgInit() {
 }
 
 function importSvg(svgStr, shouldPersist=true) {
+  GLOBAL_STATE.undoRedo.undoStack = [];
+  GLOBAL_STATE.undoRedo.redoStack = [];
   GLOBAL_STATE.undoRedo.pauseUndoStack = true;
   const parser = new DOMParser();
   const uploadedSvg = parser.parseFromString(svgStr, "image/svg+xml").documentElement;
