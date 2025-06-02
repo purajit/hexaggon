@@ -14,6 +14,12 @@ importers:
       '@eslint/js':
         specifier: ^9.28.0
         version: 9.28.0
+      '@html-eslint/eslint-plugin':
+        specifier: ^0.41.0
+        version: 0.41.0(eslint@9.28.0)
+      '@html-eslint/parser':
+        specifier: ^0.41.0
+        version: 0.41.0
       eslint:
         specifier: ^9.28.0
         version: 9.28.0
@@ -74,6 +80,21 @@ packages:
   '@eslint/plugin-kit@0.3.1':
     resolution: {integrity: sha512-0J+zgWxHN+xXONWIyPWKFMgVuJoZuGiIFu8yxk7RJjxkzpGmyja5wRFqZIVtjDVOQpV+Rw0iOAjYPE2eQyjr0w==, tarball: https://registry.npmjs.org/@eslint/plugin-kit/-/plugin-kit-0.3.1.tgz}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@html-eslint/eslint-plugin@0.41.0':
+    resolution: {integrity: sha512-kZhOdLOx5xGogw9CE/uGKkoo8t7fNK9PxU6kosIvu9Yveir3r2VhGYC4II/2OEGQ+O4cPk2LxV1fCpYt7XFMtQ==, tarball: https://registry.npmjs.org/@html-eslint/eslint-plugin/-/eslint-plugin-0.41.0.tgz}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      eslint: ^8.0.0 || ^9.0.0
+
+  '@html-eslint/parser@0.41.0':
+    resolution: {integrity: sha512-QQJeq2G11T/SGYcG09+XOajm+X8XX6bVVSouB3SVlGmm3exvJis0B6tBnb+5Rz2kC/q3C21z1ZuCc/AXcFKzIA==, tarball: https://registry.npmjs.org/@html-eslint/parser/-/parser-0.41.0.tgz}
+
+  '@html-eslint/template-parser@0.41.0':
+    resolution: {integrity: sha512-ntZNMh+G13lPvwSSkr2U0XqWWDFLSZPeidcztgVCjxthwgSMdefL4au/YicnlB+h1WNBw8Pk0bAjczJXEbp85g==, tarball: https://registry.npmjs.org/@html-eslint/template-parser/-/template-parser-0.41.0.tgz}
+
+  '@html-eslint/template-syntax-parser@0.41.0':
+    resolution: {integrity: sha512-dgiE30uXWCoD89chi6KdjYOF+143bImJ3GNl3j2iy6/ZM8enTqCQVHZ48+Esf6Tx2rLBBBdxx4Rb0fG11myHsw==, tarball: https://registry.npmjs.org/@html-eslint/template-syntax-parser/-/template-syntax-parser-0.41.0.tgz}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==, tarball: https://registry.npmjs.org/@humanfs/core/-/core-0.19.1.tgz}
@@ -170,6 +191,9 @@ packages:
 
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==, tarball: https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz}
+
+  es-html-parser@0.2.0:
+    resolution: {integrity: sha512-snJ7uJC8Dkx/yT0eYZrWcY57rkPU6Zui6YphPynw8r52AWf57gjqMC0GWe7OxSDipwXowFpa3rqckEeAPTOz7w==, tarball: https://registry.npmjs.org/es-html-parser/-/es-html-parser-0.2.0.tgz}
 
   escape-string-regexp@4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==, tarball: https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz}
@@ -508,6 +532,25 @@ snapshots:
       '@eslint/core': 0.14.0
       levn: 0.4.1
 
+  '@html-eslint/eslint-plugin@0.41.0(eslint@9.28.0)':
+    dependencies:
+      '@eslint/plugin-kit': 0.3.1
+      '@html-eslint/parser': 0.41.0
+      '@html-eslint/template-parser': 0.41.0
+      '@html-eslint/template-syntax-parser': 0.41.0
+      eslint: 9.28.0
+
+  '@html-eslint/parser@0.41.0':
+    dependencies:
+      '@html-eslint/template-syntax-parser': 0.41.0
+      es-html-parser: 0.2.0
+
+  '@html-eslint/template-parser@0.41.0':
+    dependencies:
+      es-html-parser: 0.2.0
+
+  '@html-eslint/template-syntax-parser@0.41.0': {}
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.6':
@@ -585,6 +628,8 @@ snapshots:
       ms: 2.1.3
 
   deep-is@0.1.4: {}
+
+  es-html-parser@0.2.0: {}
 
   escape-string-regexp@4.0.0: {}
 

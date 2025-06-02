@@ -1,7 +1,9 @@
-import js from "@eslint/js";
-import globals from "globals";
-import css from "@eslint/css";
 import { defineConfig } from "eslint/config";
+import globals from "globals";
+
+import css from "@eslint/css";
+import html from "@html-eslint/eslint-plugin";
+import js from "@eslint/js";
 
 export default defineConfig([
   {
@@ -19,5 +21,12 @@ export default defineConfig([
     plugins: { css },
     language: "css/css",
     extends: ["css/recommended"],
+  },
+  {
+    ...html.configs["flat/recommended"],
+    files: ["**/*.html"],
+    rules: {
+      "@html-eslint/indent": ["error", 2],
+    },
   },
 ]);

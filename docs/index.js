@@ -870,7 +870,11 @@ function undoLastAction() {
           const fromCRNArr = target.fromCRN.split(",");
           const toCRNArr = target.toCRN.split(",");
           drawBoundaryLine(
-            { c: fromCRNArr[0], r: fromCRNArr[1], n: fromCRNArr[2] },
+            {
+              c: fromCRNArr[0],
+              r: fromCRNArr[1],
+              n: fromCRNArr[2],
+            },
             { c: toCRNArr[0], r: toCRNArr[1], n: toCRNArr[2] },
             target.color,
           );
@@ -963,7 +967,11 @@ function setCanvasColor(previousCanvasColor, color) {
   }
   GLOBAL_STATE.layers.GRID.canvasColor = color;
   SVG.setAttribute("canvasColor", color);
-  addToUndoStack({ type: "canvasColor", old: previousCanvasColor, new: color });
+  addToUndoStack({
+    type: "canvasColor",
+    old: previousCanvasColor,
+    new: color,
+  });
 }
 
 function setGridColor(previousGridColor, color) {
