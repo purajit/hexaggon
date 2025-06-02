@@ -15,8 +15,8 @@
   color-scheme: light dark;
   --background-color: light-dark(#ffffff, #1b1b1b);
   --font-color: light-dark(#000000, #ffffff);
-  --disabled-btn-color: light-dark(#ccc, #444);
-  --shadow-color: light-dark(#ccc, #444);
+  --disabled-btn-color: light-dark(#cccccc, #444);
+  --shadow-color: light-dark(#cccccc, #444444);
   --selected-btn-color: light-dark(#91b985, #4a6b4e);
   --selected-border-color: light-dark(#000000, #ffffff);
 }
@@ -182,6 +182,10 @@ body {
   width: 30px;
 }
 
+#loadBtn {
+  display: none;
+}
+
 /* Composible properties */
 .hidden {
   /* eslint-disable-next-line css/no-important */
@@ -310,4 +314,9 @@ input[type="range"]:focus::-moz-range-thumb {
   overflow: hidden;
   clip: rect(1px, 1px, 1px, 1px);
   white-space: nowrap; /* added line */
+}
+
+.flip-90deg {
+  transform: rotate(90deg);
+  transform-origin: center;
 }
