@@ -107,7 +107,7 @@
           xmlns="http://www.w3.org/2000/svg"
           width="45"
           height="45"
-          viewport="0 0 45 45"
+          viewBox="0 0 45 45"
         >
           <rect
             id="chosenSecondaryColor"
@@ -302,7 +302,7 @@
         <div class="flex-row gappy">
           <button
             id="horizontalGridBtn"
-            class="grid-direction-btn hexagon-btn btn border-box"
+            class="flip-90deg grid-direction-btn hexagon-btn btn border-box"
             title="Use a horizontal grid"
             data-direction="HORIZONTAL"
           >
@@ -311,8 +311,7 @@
               height="30"
               viewBox="0 0 16 16"
               fill="none"
-              xmlns="http://www.w3.org/3000/svg"
-              transform="rotate(90)"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path class="grid-sample" d="M8 0L15 4V12L8 16L1 12V4L8 0Z" />
             </svg>
@@ -610,9 +609,12 @@
         <button id="saveBtn" class="btn" title="Save/export map to disk">
           💾
         </button>
-        <button id="loadBtn" class="btn" title="Load/import map from disk">
-          <label for="fileUpload">📥</label>
-        </button>
+        <button
+          id="loadBtn"
+          class="btn"
+          title="Load/import map from disk"
+        ></button>
+        <label class="btn" for="fileUpload">📥</label>
         <input
           id="fileUpload"
           class="hidden"
@@ -635,6 +637,8 @@
               stroke-width="20px"
               fill="white"
               fill-opacity="0.4"
+              width="0"
+              height="0"
             ></rect>
           </g>
         </svg>
@@ -649,5 +653,5 @@
       </div>
     </div>
   </div>
+  <script src="index.js"></script>
 </body>
-<script src="index.js"></script>
