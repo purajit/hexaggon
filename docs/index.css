@@ -116,9 +116,6 @@ body {
   font-size: 21px;
   border: none;
 }
-.btn.selected {
-  background: var(--selected-btn-color);
-}
 
 .btn > label {
   cursor: pointer;
@@ -135,6 +132,7 @@ body {
 
 .bottom {
   bottom: 0;
+  align-items: end;
 }
 
 .frosted {
@@ -182,6 +180,30 @@ body {
   width: 30px;
 }
 
+.loaded-file-name {
+  width: 300px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  align-content: center;
+  border-radius: 10px;
+  padding-left: 10px;
+}
+
+#fileName {
+  padding: 5px;
+  border-bottom: 3px solid green;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+#fileName:focus {
+  max-width: 1000px;
+}
+
 #loadBtn {
   display: none;
 }
@@ -211,6 +233,10 @@ body {
 
 .gappy {
   gap: 0.5rem;
+}
+
+.selected {
+  background: var(--selected-btn-color);
 }
 
 .primaryselected {
@@ -248,6 +274,13 @@ body {
   top: 0;
   right: 0;
 }
+
+.flip-90deg {
+  transform: rotate(90deg);
+  transform-origin: center;
+}
+
+/* remaining is copy-pasted; it makes the grid thickness slider look how it does */
 
 input[type="range"] {
   -webkit-appearance: none;
@@ -304,19 +337,4 @@ input[type="range"]::-moz-range-thumb {
 
 input[type="range"]:focus::-moz-range-thumb {
   box-shadow: 0px 0px 7px 3px #0065c4;
-}
-
-.visually-hidden {
-  /* eslint-disable-next-line css/no-important */
-  position: absolute !important;
-  height: 1px;
-  width: 1px;
-  overflow: hidden;
-  clip: rect(1px, 1px, 1px, 1px);
-  white-space: nowrap; /* added line */
-}
-
-.flip-90deg {
-  transform: rotate(90deg);
-  transform-origin: center;
 }

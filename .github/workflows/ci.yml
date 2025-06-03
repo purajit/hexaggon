@@ -14,4 +14,4 @@ jobs:
       - run: pnpm install
       - run: pnpm exec prettier . --check
       - run: pnpm exec htmlhint
-      - run: pnpm exec eslint
+      - run: pnpm exec eslint --max-warnings=0

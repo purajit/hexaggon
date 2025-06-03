@@ -1,18 +1,21 @@
 /*************
- * CONSTANTS *
+ * constants *
  *************/
 const HEX_RADIUS = 35;
 const HEX_RADIUS_SQUARED = HEX_RADIUS ** 2; // to avoid sqrt in distance calculations
 const DEFAULT_TEXT_FONT_SIZE = 40;
 
-const Layers = {
+const ControlSets = {
   GRID: "GRID",
   COLOR: "COLOR",
   OBJECT: "OBJECT",
   BOUNDARY: "BOUNDARY",
   PATH: "PATH",
   TEXT: "TEXT",
+
+  // non-layer controlsets
   SETTINGS: "SETTINGS",
+  FILEBROWSER: "FILEBROWSER",
 };
 
 const Tools = {
@@ -25,13 +28,15 @@ const Tools = {
   ZOOM: "ZOOM",
 };
 
-const Controls = {
+const ControlPanels = {
   COLOR: "COLOR",
   OBJECT: "OBJECT",
   PATHTIPSYMBOL: "PATHTIPSYMBOL",
   TEXT: "TEXT",
   GRID: "GRID",
   SETTINGS: "SETTINGS",
+  MINIMAP: "MINIMAP",
+  FILEBROWSER: "FILEBROWSER",
 };
 
 const GridDirection = {
@@ -40,8 +45,8 @@ const GridDirection = {
 };
 
 const LAYER_TOOL_COMPATIBILITY = {
-  [Layers.GRID]: [Tools.ZOOM],
-  [Layers.COLOR]: [
+  [ControlSets.GRID]: [Tools.ZOOM],
+  [ControlSets.COLOR]: [
     Tools.BRUSH,
     Tools.FILL,
     Tools.LINE,
@@ -49,27 +54,35 @@ const LAYER_TOOL_COMPATIBILITY = {
     Tools.EYEDROPPER,
     Tools.ZOOM,
   ],
-  [Layers.OBJECT]: [
+  [ControlSets.OBJECT]: [
     Tools.BRUSH,
     Tools.LINE,
     Tools.ERASER,
     Tools.EYEDROPPER,
     Tools.ZOOM,
   ],
-  [Layers.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
-  [Layers.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
-  [Layers.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
-  [Layers.SETTINGS]: [Tools.ZOOM],
+  [ControlSets.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
+  [ControlSets.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
+  [ControlSets.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
 };
 
-const LAYER_CONTROL_COMPATIBILITY = {
-  [Layers.GRID]: [Controls.GRID],
-  [Layers.COLOR]: [Controls.COLOR],
-  [Layers.OBJECT]: [Controls.OBJECT],
-  [Layers.PATH]: [Controls.COLOR, Controls.PATHTIPSYMBOL],
-  [Layers.BOUNDARY]: [Controls.COLOR],
-  [Layers.TEXT]: [Controls.COLOR, Controls.TEXT],
-  [Layers.SETTINGS]: [Controls.SETTINGS],
+const CONTROL_PANEL_COMPATIBILITY = {
+  [ControlSets.GRID]: [ControlPanels.GRID, ControlPanels.MINIMAP],
+  [ControlSets.COLOR]: [ControlPanels.COLOR, ControlPanels.MINIMAP],
+  [ControlSets.OBJECT]: [ControlPanels.OBJECT, ControlPanels.MINIMAP],
+  [ControlSets.PATH]: [
+    ControlPanels.COLOR,
+    ControlPanels.PATHTIPSYMBOL,
+    ControlPanels.MINIMAP,
+  ],
+  [ControlSets.BOUNDARY]: [ControlPanels.COLOR, ControlPanels.MINIMAP],
+  [ControlSets.TEXT]: [
+    ControlPanels.COLOR,
+    ControlPanels.TEXT,
+    ControlPanels.MINIMAP,
+  ],
+  [ControlSets.SETTINGS]: [ControlPanels.SETTINGS, ControlPanels.MINIMAP],
+  [ControlSets.FILEBROWSER]: [ControlPanels.FILEBROWSER, ControlPanels.MINIMAP],
 };
 
 /****************
@@ -78,8 +91,7 @@ const LAYER_CONTROL_COMPATIBILITY = {
 const GLOBAL_STATE = {
   // this is the only part that should be impacted during init/import
   drawing: {
-    name: "",
-    uuid: crypto.randomUUID(),
+    fileName: `Untitled${Date.now()}.svg`,
     gridDirection: GridDirection.HORIZONTAL,
     gridThickness: "5",
     // hexEntries[c][r] {hex, hexObject, x, y, c, r};
@@ -90,7 +102,7 @@ const GLOBAL_STATE = {
 
   // everything else is just a way to maintain the state of the active
   // session. None of it should need to be exported, or set during import
-  currentLayer: Layers.COLOR,
+  currentLayer: ControlSets.COLOR,
   currentTool: Tools.BRUSH,
   keyState: {
     holdingMeta: false,
@@ -100,10 +112,7 @@ const GLOBAL_STATE = {
     holdingRightClick: false,
     holdingCenterClick: false,
   },
-  featureFlags: {
-    enableFileManagement: false,
-    persistState: false,
-  },
+  featureFlags: {},
   temporaryTool: {
     previousTool: Tools.BRUSH,
     active: false,
@@ -152,8 +161,6 @@ const GLOBAL_STATE = {
       italics: false,
       underline: false,
     },
-
-    SETTINGS: {},
   },
 };
 
@@ -171,6 +178,7 @@ const GLOBAL_STATE = {
  *   togther                                                            *
  ************************************************************************/
 // the main drawing
+const FILE_NAME_DIV = document.getElementById("fileName");
 const SVG = document.getElementById("hexmap");
 const MINIMAP = document.getElementById("minimap");
 const MINIMAP_PREVIEW = document.getElementById("minimapPreview");
@@ -178,11 +186,14 @@ const MINIMAP_VIEWBOX = document.getElementById("minimapViewBox");
 // global application controls
 const WELCOME_CONTAINER_DIV = document.getElementById("welcomeContainer");
 const LAYER_PICKER_BUTTONS = document.querySelectorAll(".layer-picker-btn");
+const NON_LAYER_CONTROL_SET_PICKER_BUTTONS = document.querySelectorAll(
+  ".non-layer-picker-btn",
+);
 const TOOL_PICKER_BUTTONS = document.querySelectorAll(".tool-picker-btn");
-const LAYER_CONTROLS = document.querySelectorAll(".layer-control");
+const CONTROL_PANEL_DIVS = document.querySelectorAll(".control-panel");
 const SAVE_BUTTON = document.getElementById("saveBtn");
 const FILE_UPLOAD_INPUT = document.getElementById("fileUpload");
-const ALL_FILES_LIST_DIVS = document.getElementById("allFilesList");
+const FILE_BROWSER_DIV = document.getElementById("fileBrowser");
 // shared across many layers
 const CHOSEN_PRIMARY_COLOR_DIV = document.getElementById("chosenPrimaryColor");
 const CHOSEN_SECONDARY_COLOR_DIV = document.getElementById(
@@ -210,26 +221,16 @@ const TEXT_UNDERLINE_DIV = document.getElementById("textUnderline");
 
 function registerDropUploadEventHandlers() {
   FILE_UPLOAD_INPUT.addEventListener("change", () => {
-    FILE_UPLOAD_INPUT.files[0]
-      .text()
-      .then((uploadedSvg) => importSvg(uploadedSvg));
+    const file = FILE_UPLOAD_INPUT.files[0];
+    file.text().then((uploadedSvg) => importSvg(file.name, uploadedSvg));
   });
 
   document.addEventListener("drop", (e) => {
     e.preventDefault();
 
-    if (e.dataTransfer.items) {
-      [...e.dataTransfer.items].forEach((item) => {
-        if (item.kind === "file") {
-          item
-            .getAsFile()
-            .text()
-            .then((uploadedSvg) => importSvg(uploadedSvg));
-        }
-      });
-    } else {
+    if (e.dataTransfer.files) {
       [...e.dataTransfer.files].forEach((file) => {
-        file.text().then((uploadedSvg) => importSvg(uploadedSvg));
+        file.text().then((uploadedSvg) => importSvg(file.name, uploadedSvg));
       });
     }
   });
@@ -242,7 +243,6 @@ function registerDropUploadEventHandlers() {
 function registerEventListeners() {
   // keyboard shortcuts
   document.addEventListener("keydown", (e) => {
-    console.log(e);
     if (
       document.activeElement.tagName == "INPUT" &&
       document.activeElement.type != "range"
@@ -251,8 +251,19 @@ function registerEventListeners() {
       return;
     }
 
+    if (document.activeElement.id == "fileName") {
+      if (e.code == "Enter") {
+        e.target.blur();
+      }
+      return;
+    }
+
     if (GLOBAL_STATE.keyState.holdingMeta) {
       switch (e.code) {
+        case "KeyS":
+          saveNow();
+          e.preventDefault();
+          break;
         case "KeyZ":
           undoLastAction();
           break;
@@ -262,22 +273,22 @@ function registerEventListeners() {
 
     switch (e.code) {
       case "Digit0":
-        switchToLayer(Layers.GRID);
+        switchToControlSet(ControlSets.GRID);
         break;
       case "Digit1":
-        switchToLayer(Layers.COLOR);
+        switchToControlSet(ControlSets.COLOR);
         break;
       case "Digit2":
-        switchToLayer(Layers.OBJECT);
+        switchToControlSet(ControlSets.OBJECT);
         break;
       case "Digit3":
-        switchToLayer(Layers.PATH);
+        switchToControlSet(ControlSets.PATH);
         break;
       case "Digit4":
-        switchToLayer(Layers.BOUNDARY);
+        switchToControlSet(ControlSets.BOUNDARY);
         break;
       case "Digit5":
-        switchToLayer(Layers.TEXT);
+        switchToControlSet(ControlSets.TEXT);
         break;
       case "KeyB":
         switchToTool(Tools.BRUSH);
@@ -354,7 +365,13 @@ function registerEventListeners() {
 
   LAYER_PICKER_BUTTONS.forEach((layerPicker) => {
     layerPicker.addEventListener("click", () => {
-      switchToLayer(layerPicker.dataset.layer);
+      switchToControlSet(layerPicker.dataset.controlset);
+    });
+  });
+
+  NON_LAYER_CONTROL_SET_PICKER_BUTTONS.forEach((controlSetPicker) => {
+    controlSetPicker.addEventListener("click", () => {
+      switchToControlSet(controlSetPicker.dataset.controlset, false);
     });
   });
 
@@ -366,6 +383,24 @@ function registerEventListeners() {
 
   SAVE_BUTTON.addEventListener("click", () => {
     exportToSvg();
+  });
+
+  FILE_BROWSER_DIV.addEventListener("click", (e) => {
+    if (e.target.classList.contains("loaded-file-name")) {
+      loadSvg(localStorage.getItem(`image-${e.target.dataset.imagename}`));
+      setFileBrowserView(e.target.dataset.imagename);
+    } else if (e.target.classList.contains("delete-file-btn")) {
+      localStorage.removeItem(`image-${e.target.dataset.imagename}`);
+      setFileBrowserView(GLOBAL_STATE.drawing.fileName);
+    }
+  });
+
+  FILE_NAME_DIV.addEventListener("focusout", (e) => {
+    if (e.target.textContent != GLOBAL_STATE.drawing.fileName) {
+      localStorage.removeItem(`image-${GLOBAL_STATE.drawing.fileName}`);
+      saveToLocalStorage(e.target.textContent, SVG.outerHTML, true);
+      setFileBrowserView(e.target.textContent);
+    }
   });
 
   // shared across many layers
@@ -447,10 +482,9 @@ function registerEventListeners() {
   // SVG events listeners
   // mousedown is the big one that coordinates most of the page
   SVG.addEventListener("mousedown", (e) => {
-    e.preventDefault();
     if (GLOBAL_STATE.currentTool == Tools.ZOOM && e.buttons < 3) {
       const zoomFactor = 0.5 * (e.button == 2 ? 1 : -1);
-      zoomSVG(zoomFactor, e.clientX, e.clientY);
+      zoomSvg(zoomFactor, e.clientX, e.clientY);
       return;
     } else if (e.buttons < 3) {
       // single left/right click
@@ -483,9 +517,8 @@ function registerEventListeners() {
       ) {
         if (e.target.classList.contains("path-highlight")) {
           const path = SVG.getElementById(`path-${e.target.id}`);
-          console.log(e.target);
-          getSVGLayer(Layers.PATH).removeChild(e.target);
-          getSVGLayer(Layers.PATH).removeChild(path);
+          getSvgLayer(ControlSets.PATH).removeChild(e.target);
+          getSvgLayer(ControlSets.PATH).removeChild(path);
           addToUndoStack({
             type: "path",
             action: "erased",
@@ -498,8 +531,8 @@ function registerEventListeners() {
           });
         }
         if (e.target.classList.contains("boundary")) {
-          getSVGLayer(Layers.BOUNDARY).removeChild(e.target);
-          MINIMAP_PREVIEW.querySelectorAll(".boundary").forEach((t) => {
+          getSvgLayer(ControlSets.BOUNDARY).removeChild(e.target);
+          MINIMAP_PREVIEW.querySelectorAll(".miniboundary").forEach((t) => {
             if (
               t.getAttribute("from-crn") == e.target.getAttribute("from-crn") &&
               t.getAttribute("to-crn") == e.target.getAttribute("to-crn") &&
@@ -519,7 +552,7 @@ function registerEventListeners() {
             },
           });
         } else if (e.target.classList.contains("in-image-text")) {
-          getSVGLayer(Layers.TEXT).removeChild(e.target);
+          getSvgLayer(ControlSets.TEXT).removeChild(e.target);
           addToUndoStack({
             type: "text",
             action: "erased",
@@ -576,9 +609,9 @@ function registerEventListeners() {
       let scale = e.deltaY / 100;
       scale =
         Math.abs(scale) > 0.1 ? (0.1 * e.deltaY) / Math.abs(e.deltaY) : scale;
-      zoomSVG(scale, e.clientX, e.clientY);
+      zoomSvg(scale, e.clientX, e.clientY);
     } else {
-      scrollSVG(e.deltaX, e.deltaY);
+      scrollSvg(e.deltaX, e.deltaY);
     }
   });
 }
@@ -631,6 +664,19 @@ function switchToCursor(name) {
   SVG.classList.add(`${name.toLowerCase()}cursor`);
 }
 
+function setFileBrowserView(fileName) {
+  populateFileBrowser();
+  GLOBAL_STATE.drawing.fileName = fileName;
+  FILE_NAME_DIV.textContent = fileName;
+  FILE_BROWSER_DIV.querySelectorAll(".loaded-file-name").forEach((b) => {
+    if (b.dataset.imagename == fileName) {
+      b.classList.add("selected");
+    } else {
+      b.classList.remove("selected");
+    }
+  });
+}
+
 function clearWelcomeScreen() {
   WELCOME_CONTAINER_DIV.classList.add("hidden");
   document.getElementById("hexaggon").classList.remove("frosted");
@@ -639,50 +685,46 @@ function clearWelcomeScreen() {
 /************************
  * GLOBAL FUNCTIONALITY *
  ************************/
-function switchToLayer(layer) {
+function switchToControlSet(controlSet, isLayer = true) {
   const previousLayer = GLOBAL_STATE.currentLayer;
-  GLOBAL_STATE.currentLayer = layer;
-  GLOBAL_STATE.currentTool = Tools.BRUSH;
-  LAYER_CONTROLS.forEach((mc) => {
-    if (
-      LAYER_CONTROL_COMPATIBILITY[GLOBAL_STATE.currentLayer].includes(
-        mc.dataset.control,
-      )
-    ) {
+  GLOBAL_STATE.currentLayer = isLayer ? controlSet : null;
+  CONTROL_PANEL_DIVS.forEach((mc) => {
+    if (CONTROL_PANEL_COMPATIBILITY[controlSet].includes(mc.dataset.control)) {
       mc.classList.remove("hidden");
     } else {
       mc.classList.add("hidden");
     }
   });
   TOOL_PICKER_BUTTONS.forEach((tpb) => {
-    if (LAYER_TOOL_COMPATIBILITY[layer].includes(tpb.dataset.tool)) {
+    if (
+      isLayer &&
+      LAYER_TOOL_COMPATIBILITY[controlSet].includes(tpb.dataset.tool)
+    ) {
       tpb.classList.remove("disabled-btn");
     } else {
       tpb.classList.add("disabled-btn");
     }
   });
   LAYER_PICKER_BUTTONS.forEach((b) => {
-    if (b.dataset.layer == layer) {
+    if (b.dataset.controlset == controlSet) {
       b.classList.add("selected");
     } else {
       b.classList.remove("selected");
     }
   });
-  document
-    .querySelectorAll(`.layer-${previousLayer}, .eraseable-${previousLayer}`)
-    .forEach((e) => {
+  if (previousLayer) {
+    document.querySelectorAll(`.eraseable-${previousLayer}`).forEach((e) => {
       e.classList.add("no-pointer-events");
     });
-  document
-    .querySelectorAll(`.layer-${layer}, .eraseable-${layer}`)
-    .forEach((e) => {
+  }
+  if (isLayer) {
+    switchToTool(LAYER_TOOL_COMPATIBILITY[controlSet][0]);
+    document.querySelectorAll(`.eraseable-${controlSet}`).forEach((e) => {
       e.classList.remove("no-pointer-events");
     });
-  switchToTool(LAYER_TOOL_COMPATIBILITY[layer][0]);
-  setPrimaryColor(GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor);
-  setSecondaryColor(
-    GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor,
-  );
+    setPrimaryColor(GLOBAL_STATE.layers[controlSet].primaryColor);
+    setSecondaryColor(GLOBAL_STATE.layers[controlSet].secondaryColor);
+  }
 }
 
 function switchToTool(tool, temporarily = false) {
@@ -703,7 +745,7 @@ function switchToTool(tool, temporarily = false) {
       b.classList.remove("selected");
     }
   });
-  if (GLOBAL_STATE.currentLayer == Layers.TEXT) {
+  if (GLOBAL_STATE.currentLayer == ControlSets.TEXT) {
     SVG.querySelectorAll(".in-image-text").forEach((t) => {
       if (tool == Tools.SELECT && GLOBAL_STATE.currentTool != Tools.SELECT) {
         t.classList.add("allow-pointer-events");
@@ -742,7 +784,7 @@ function exportToSvg() {
   const svgUrl = URL.createObjectURL(svgBlob);
   const downloadLink = document.createElement("a");
   downloadLink.href = svgUrl;
-  downloadLink.download = name;
+  downloadLink.download = GLOBAL_STATE.drawing.fileName;
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
@@ -751,7 +793,7 @@ function exportToSvg() {
 // the function the coordinates the entire interaction with the map
 function handleHexInteraction(c, r, mouseX, mouseY) {
   const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
-  if (GLOBAL_STATE.currentLayer == Layers.COLOR) {
+  if (GLOBAL_STATE.currentLayer == ControlSets.COLOR) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       colorHex(c, r);
     } else if (GLOBAL_STATE.currentTool == Tools.FILL) {
@@ -765,37 +807,36 @@ function handleHexInteraction(c, r, mouseX, mouseY) {
         setPrimaryColor(hexEntry.hex.getAttribute("fill"));
       }
     }
-  } else if (GLOBAL_STATE.currentLayer == Layers.OBJECT) {
+  } else if (GLOBAL_STATE.currentLayer == ControlSets.OBJECT) {
     if (GLOBAL_STATE.layers.OBJECT.primaryObject == null) {
       return;
     }
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       placeObjectOnHex(c, r);
-    } else if (GLOBAL_STATE.currentTool == Tools.EYEDROPPER) {
+    } else if (
+      GLOBAL_STATE.currentTool == Tools.EYEDROPPER &&
+      hexEntry.hexObject != null
+    ) {
       if (GLOBAL_STATE.mouseState.holdingRightClick) {
-        setSecondaryObject(
-          GLOBAL_STATE.drawing.hexEntries[c][r].hexObject.textContent,
-        );
+        setSecondaryObject(hexEntry.hexObject.textContent);
       } else {
-        setPrimaryObject(
-          GLOBAL_STATE.drawing.hexEntries[c][r].hexObject.textContent,
-        );
+        setPrimaryObject(hexEntry.hexObject.textContent);
       }
     } else if (GLOBAL_STATE.currentTool == Tools.ERASER) {
       placeObjectOnHex(c, r, "");
     }
-  } else if (GLOBAL_STATE.currentLayer == Layers.BOUNDARY) {
+  } else if (GLOBAL_STATE.currentLayer == ControlSets.BOUNDARY) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       startBoundaryDrawing(hexEntry, mouseX, mouseY);
     }
-  } else if (GLOBAL_STATE.currentLayer == Layers.TEXT) {
+  } else if (GLOBAL_STATE.currentLayer == ControlSets.TEXT) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       const pt = new DOMPoint(mouseX, mouseY).matrixTransform(
         SVG.getScreenCTM().inverse(),
       );
       placeText(pt);
     }
-  } else if (GLOBAL_STATE.currentLayer == Layers.PATH) {
+  } else if (GLOBAL_STATE.currentLayer == ControlSets.PATH) {
     if (GLOBAL_STATE.currentTool == Tools.BRUSH) {
       drawPath(hexEntry);
     }
@@ -854,10 +895,10 @@ function undoLastAction() {
               t.getAttribute("to-crn") == target.toCRN &&
               t.getAttribute("stroke") == target.color
             ) {
-              SVG.removeChild(t);
+              getSvgLayer(ControlSets.BOUNDARY).removeChild(t);
             }
           });
-          MINIMAP_PREVIEW.querySelectorAll(".boundary").forEach((t) => {
+          MINIMAP_PREVIEW.querySelectorAll(".miniboundary").forEach((t) => {
             if (
               t.getAttribute("from-crn") == target.fromCRN &&
               t.getAttribute("to-crn") == target.toCRN &&
@@ -1058,6 +1099,13 @@ function floodFill(startC, startR, fn) {
     const [c, r] = queue.shift();
     getHexNeighbors(c, r).forEach((n) => {
       const stringedCoords = `${n[0]},${n[1]}`;
+      if (
+        n[0] < 0 ||
+        n[1] < 0 ||
+        n[0] >= GLOBAL_STATE.drawing.cols ||
+        n[1] >= GLOBAL_STATE.drawing.rows
+      )
+        return;
       if (visited.includes(stringedCoords)) return;
       const nhexentry = GLOBAL_STATE.drawing.hexEntries[n[0]][n[1]];
       if (nhexentry == null) return;
@@ -1075,20 +1123,50 @@ function floodFill(startC, startR, fn) {
  * OBJECT LAYER FUNCTIONALITY *
  ******************************/
 function placeObjectOnHex(c, r, objectToUse = null) {
+  // if objectToUse = "" empty string, empty/delete the text
+  // we create/delete instead of keeping a permanent text element because this
+  // takes up literally 60% of the space of even a well-populated map
+
   if (objectToUse === null) {
     objectToUse = GLOBAL_STATE.mouseState.holdingRightClick
       ? GLOBAL_STATE.layers.OBJECT.secondaryObject
       : GLOBAL_STATE.layers.OBJECT.primaryObject;
   }
-  const oldObject = GLOBAL_STATE.drawing.hexEntries[c][r].hexObject.textContent;
-  if (oldObject == objectToUse) {
+  const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
+  const oldObject = hexEntry.hexObject;
+  const oldObjectText = oldObject ? oldObject.textContent : "";
+  if (oldObjectText === objectToUse) {
     return;
   }
+  // we didn't have an object here before
+  if (!oldObject) {
+    const hexObject = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text",
+    );
+    hexObject.setAttribute("c", c);
+    hexObject.setAttribute("r", r);
+    hexObject.setAttribute("x", hexEntry.hex.getAttribute("x"));
+    hexObject.setAttribute("y", hexEntry.hex.getAttribute("y"));
+    hexObject.classList.add(
+      "no-pointer-events",
+      "hex-object",
+      `layer-${ControlSets.OBJECT}`,
+    );
+    getSvgLayer(ControlSets.OBJECT).appendChild(hexObject);
+    GLOBAL_STATE.drawing.hexEntries[c][r].hexObject = hexObject;
+  }
 
-  GLOBAL_STATE.drawing.hexEntries[c][r].hexObject.textContent = objectToUse;
+  if (objectToUse === "") {
+    const hexObject = GLOBAL_STATE.drawing.hexEntries[c][r].hexObject;
+    getSvgLayer(ControlSets.OBJECT).removeChild(hexObject);
+    GLOBAL_STATE.drawing.hexEntries[c][r].hexObject = null;
+  } else {
+    GLOBAL_STATE.drawing.hexEntries[c][r].hexObject.textContent = objectToUse;
+  }
   addToUndoStack({
     type: "object",
-    old: oldObject,
+    old: oldObjectText,
     new: objectToUse,
     target: [c, r],
   });
@@ -1105,11 +1183,6 @@ function drawLineAndHighlight(
 ) {
   const id = crypto.randomUUID();
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("fill", "none");
-  line.setAttribute("stroke-dasharray", 10);
-  line.setAttribute("stroke-linecap", "round");
-  line.setAttribute("stroke-linejoin", "round");
-  line.setAttribute("stroke-width", 3);
   line.setAttribute("stroke", lineColor);
   line.setAttribute("x1", fromHexEntry.x);
   line.setAttribute("y1", fromHexEntry.y);
@@ -1119,19 +1192,13 @@ function drawLineAndHighlight(
   line.setAttribute("y2", toHexEntry.y);
   line.setAttribute("c2", toHexEntry.c);
   line.setAttribute("r2", toHexEntry.r);
-  line.classList.add("path");
-  line.classList.add(`layer-${Layers.PATH}`);
+  line.classList.add("path", `layer-${ControlSets.PATH}`);
   line.id = `path-${id}`;
 
   const lineHighlight = document.createElementNS(
     "http://www.w3.org/2000/svg",
     "line",
   );
-  lineHighlight.setAttribute("fill", "none");
-  lineHighlight.setAttribute("stroke-linecap", "round");
-  lineHighlight.setAttribute("stroke-linejoin", "round");
-  lineHighlight.setAttribute("stroke-width", 7);
-  lineHighlight.setAttribute("stroke-opacity", 0.5);
   lineHighlight.setAttribute("stroke", highlightColor);
   lineHighlight.setAttribute("x1", fromHexEntry.x);
   lineHighlight.setAttribute("y1", fromHexEntry.y);
@@ -1141,9 +1208,11 @@ function drawLineAndHighlight(
   lineHighlight.setAttribute("y2", toHexEntry.y);
   lineHighlight.setAttribute("c2", toHexEntry.c);
   lineHighlight.setAttribute("r2", toHexEntry.r);
-  lineHighlight.classList.add("path-highlight");
-  lineHighlight.classList.add(`eraseable-${Layers.PATH}`);
-  lineHighlight.classList.add(`layer-${Layers.PATH}`);
+  lineHighlight.classList.add(
+    "path-highlight",
+    `layer-${ControlSets.PATH}`,
+    `eraseable-${ControlSets.PATH}`,
+  );
   lineHighlight.id = id;
 
   addToUndoStack({
@@ -1156,8 +1225,8 @@ function drawLineAndHighlight(
       highlightColor,
     },
   });
-  getSVGLayer(Layers.PATH).appendChild(lineHighlight);
-  getSVGLayer(Layers.PATH).appendChild(line);
+  getSvgLayer(ControlSets.PATH).appendChild(lineHighlight);
+  getSvgLayer(ControlSets.PATH).appendChild(line);
 }
 
 function drawPath(hexEntry) {
@@ -1299,14 +1368,14 @@ function drawBoundaryLine(fromCRN, toCRN, color) {
   line.setAttribute("from-crn", fromCRNStr);
   line.setAttribute("to-crn", toCRNStr);
   line.setAttribute("stroke", color);
-  line.setAttribute("stroke-width", 9);
-  line.setAttribute("stroke-linecap", "round");
-  line.classList.add("boundary");
-  line.classList.add(`eraseable-${Layers.BOUNDARY}`);
-  line.classList.add(`layer-${Layers.BOUNDARY}`);
-  getSVGLayer(Layers.BOUNDARY).appendChild(line);
   const minimapLine = line.cloneNode(true);
-  minimapLine.setAttribute("stroke-width", 20);
+  line.classList.add(
+    "boundary",
+    `layer-${ControlSets.BOUNDARY}`,
+    `eraseable-${ControlSets.BOUNDARY}`,
+  );
+  minimapLine.classList.add("miniboundary");
+  getSvgLayer(ControlSets.BOUNDARY).appendChild(line);
   MINIMAP_PREVIEW.appendChild(minimapLine);
   addToUndoStack({
     type: "boundary",
@@ -1320,7 +1389,6 @@ function drawBoundaryLine(fromCRN, toCRN, color) {
  ****************************/
 function placeText(pt) {
   const textInput = TEXT_INPUT_DIV.value;
-  console.log(pt, textInput);
   if (!textInput) {
     return;
   }
@@ -1368,9 +1436,11 @@ function placeTextWithConfig(
   textbox.setAttribute("y", pt.y);
   textbox.setAttribute("fill", color);
   textbox.textContent = textInput;
-  textbox.classList.add("in-image-text");
-  textbox.classList.add(`eraseable-${Layers.TEXT}`);
-  textbox.classList.add(`layer-${Layers.TEXT}`);
+  textbox.classList.add(
+    "in-image-text",
+    `layer-${ControlSets.TEXT}`,
+    `eraseable-${ControlSets.TEXT}`,
+  );
   addToUndoStack({
     type: "text",
     action: "added",
@@ -1384,17 +1454,17 @@ function placeTextWithConfig(
       color,
     },
   });
-  getSVGLayer(Layers.TEXT).appendChild(textbox);
+  getSvgLayer(ControlSets.TEXT).appendChild(textbox);
 }
 
 /***************
  * ZOOM/SCROLL *
  ***************/
 function freeDragScroll(e) {
-  scrollSVG(-e.movementX, -e.movementY);
+  scrollSvg(-e.movementX, -e.movementY);
 }
 
-function scrollSVG(xdiff, ydiff) {
+function scrollSvg(xdiff, ydiff) {
   const viewBox = SVG.getAttribute("viewBox");
   const [x, y, width, height] = viewBox.split(" ").map(Number);
   const newX = x + xdiff;
@@ -1406,7 +1476,7 @@ function scrollSVG(xdiff, ydiff) {
   MINIMAP_VIEWBOX.setAttribute("height", height);
 }
 
-function zoomSVG(scale, mouseX, mouseY) {
+function zoomSvg(scale, mouseX, mouseY) {
   // mouse point within SVG space. Don't ask, I just copied-pasted
   const pt = new DOMPoint(mouseX, mouseY).matrixTransform(
     SVG.getScreenCTM().inverse(),
@@ -1417,7 +1487,10 @@ function zoomSVG(scale, mouseX, mouseY) {
   const [x, y, width, height] = viewBox.split(" ").map(Number);
 
   // new viewbox
-  const [width2, height2] = [width + width * scale, height + height * scale];
+  const [width2, height2] = [
+    Math.min(width + width * scale),
+    Math.min(height + height * scale),
+  ];
   // new corner of the viewbox
   const [xPropW, yPropH] = [(pt.x - x) / width, (pt.y - y) / height];
   const x2 = pt.x - xPropW * width2;
@@ -1476,18 +1549,22 @@ function hexIndexToPixel(_c, _r, gridDirection) {
   return { x, y };
 }
 
+function roundForHex(num) {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 function getHexVertixes(c, r, gridDirection) {
   const { x, y } = hexIndexToPixel(c, r, gridDirection);
   const points = [];
   for (let i = 0; i < 6; i++) {
     const angle = (Math.PI / 3) * i;
     if (gridDirection == GridDirection.VERTICAL) {
-      const px = x + HEX_RADIUS * Math.sin(angle);
-      const py = y + HEX_RADIUS * Math.cos(angle);
+      const px = roundForHex(x + HEX_RADIUS * Math.sin(angle));
+      const py = roundForHex(y + HEX_RADIUS * Math.cos(angle));
       points.push(`${px},${py}`);
     } else {
-      const px = x + HEX_RADIUS * Math.cos(angle);
-      const py = y + HEX_RADIUS * Math.sin(angle);
+      const px = roundForHex(x + HEX_RADIUS * Math.cos(angle));
+      const py = roundForHex(y + HEX_RADIUS * Math.sin(angle));
       points.push(`${px},${py}`);
     }
   }
@@ -1497,7 +1574,7 @@ function getHexVertixes(c, r, gridDirection) {
 /***********
  * DRAWING *
  ***********/
-function getSVGLayer(layer) {
+function getSvgLayer(layer) {
   return SVG.getElementById(`${layer}Layer`) || SVG;
 }
 
@@ -1515,8 +1592,10 @@ function positionHexes(gridDirection) {
       hexEntry.hex.setAttribute("x", x);
       hexEntry.hex.setAttribute("y", y);
       hexEntry.hex.setAttribute("points", points.join(" "));
-      hexEntry.hexObject.setAttribute("x", x);
-      hexEntry.hexObject.setAttribute("y", y);
+      if (hexEntry.hexObject) {
+        hexEntry.hexObject.setAttribute("x", x);
+        hexEntry.hexObject.setAttribute("y", y);
+      }
       if (Object.prototype.hasOwnProperty.call(hexEntry, "minihex")) {
         hexEntry.minihex.setAttribute("points", points.join(" "));
       }
@@ -1530,26 +1609,8 @@ function drawHex(c, r) {
   hex.setAttribute("c", c);
   hex.setAttribute("r", r);
   hex.classList.add("hex");
-
-  const hexObject = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "text",
-  );
-  hexObject.setAttribute("c", c);
-  hexObject.setAttribute("r", r);
-  hexObject.setAttribute("text-anchor", "middle");
-  hexObject.setAttribute("dominant-baseline", "central");
-  hexObject.setAttribute("font-size", `${HEX_RADIUS}px`);
-  hexObject.setAttribute("width", `${2 * HEX_RADIUS}px`);
-  hexObject.setAttribute("height", `${2 * HEX_RADIUS}px`);
-  hexObject.classList.add("no-pointer-events");
-  hexObject.classList.add("hex-object");
-  hexObject.classList.add(`layer-${Layers.OBJECT}`);
-
-  getSVGLayer("HEX").appendChild(hex);
-  getSVGLayer(Layers.OBJECT).appendChild(hexObject);
-
-  return { hex, hexObject, x: null, y: null, c, r };
+  getSvgLayer("HEX").appendChild(hex);
+  return { hex, hexObject: null, x: null, y: null, c, r };
 }
 
 function initMiniMap(x, y, width, height) {
@@ -1565,7 +1626,6 @@ function initMiniMap(x, y, width, height) {
         "http://www.w3.org/2000/svg",
         "polygon",
       );
-      minihex.setAttribute("stroke-width", "1px");
       minihex.setAttribute("c", hexEntry.c);
       minihex.setAttribute("r", hexEntry.r);
       minihex.setAttribute("points", pointsStr);
@@ -1575,7 +1635,7 @@ function initMiniMap(x, y, width, height) {
       MINIMAP_PREVIEW.appendChild(minihex);
     }
   }
-  const minibbox = MINIMAP.getBBox();
+  const minibbox = MINIMAP_PREVIEW.getBBox();
   MINIMAP.setAttribute(
     "viewBox",
     `${minibbox.x} ${minibbox.y} ${minibbox.width} ${minibbox.height}`,
@@ -1589,7 +1649,6 @@ function initMiniMap(x, y, width, height) {
 function svgInit() {
   GLOBAL_STATE.undoRedo.pauseUndoStack = true;
   SVG.setAttribute("gridDirection", GLOBAL_STATE.drawing.gridDirection);
-  SVG.setAttribute("uuid", GLOBAL_STATE.drawing.uuid);
   SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   GLOBAL_STATE.drawing.hexEntries = [];
   Array.prototype.slice
@@ -1623,7 +1682,7 @@ function svgInit() {
   GRID_THICKNESS_SLIDER_DIV.value = GLOBAL_STATE.drawing.gridThickness;
   setGridDirection(GridDirection.HORIZONTAL);
 
-  switchToLayer(Layers.COLOR);
+  switchToControlSet(ControlSets.COLOR);
   GLOBAL_STATE.undoRedo.pauseUndoStack = false;
   // smolbean grid for inspection ease
   // for (let c = 3; c < 13; c++) {
@@ -1633,7 +1692,7 @@ function svgInit() {
   // }
 }
 
-function importSvg(svgStr) {
+function loadSvg(svgStr) {
   GLOBAL_STATE.undoRedo.undoStack = [];
   GLOBAL_STATE.undoRedo.redoStack = [];
   GLOBAL_STATE.undoRedo.pauseUndoStack = true;
@@ -1642,12 +1701,15 @@ function importSvg(svgStr) {
     svgStr,
     "image/svg+xml",
   ).documentElement;
-
-  GLOBAL_STATE.drawing.uuid =
-    uploadedSvg.getAttribute("uuid") || crypto.randomUUID();
+  uploadedSvg.childNodes.forEach((c) => {
+    if (c.tagName == "style") {
+      uploadedSvg.removeChild(c);
+    }
+  });
   setGridDirection(uploadedSvg.getAttribute("gridDirection"));
-  SVG.setAttribute("uuid", GLOBAL_STATE.drawing.uuid);
+  const styleElement = SVG.getElementsByTagName("style")[0];
   SVG.innerHTML = uploadedSvg.innerHTML;
+  SVG.appendChild(styleElement);
 
   // extract hex metadata
   const hexesMap = {};
@@ -1683,44 +1745,74 @@ function importSvg(svgStr) {
     GLOBAL_STATE.drawing.hexEntries[c][r].hexObject = hexObject;
   });
 
-  initMiniMap(
-    SVG.viewBox.baseVal.x,
-    SVG.viewBox.baseVal.y,
-    SVG.viewBox.baseVal.width,
-    SVG.viewBox.baseVal.height,
+  const bbox = SVG.getBBox();
+  const midX = (bbox.width - window.innerWidth) / 2;
+  const midY = (bbox.height - window.innerHeight) / 2;
+  SVG.setAttribute(
+    "viewBox",
+    `${midX} ${midY} ${window.innerWidth} ${window.innerHeight}`,
   );
+  initMiniMap(midX, midY, window.innerWidth, window.innerHeight);
+
   setCanvasColor(null, uploadedSvg.getAttribute("canvasColor"));
   setGridColor(null, uploadedSvg.getAttribute("gridColor"));
-  switchToLayer(Layers.COLOR);
+  switchToControlSet(ControlSets.COLOR);
+
   clearWelcomeScreen();
   GLOBAL_STATE.undoRedo.pauseUndoStack = false;
-  if (GLOBAL_STATE.featureFlags.persistState) {
-    saveToLocalStorage();
-  }
+}
+
+function importSvg(fileName, svgStr) {
+  loadSvg(svgStr);
+  saveToLocalStorage(fileName, svgStr, true);
+  setFileBrowserView(fileName);
 }
 
 /*************************************
  * STATE PERSISTENCE/FILE MANAGEMENT *
  *************************************/
-function saveToLocalStorage() {
-  localStorage.setItem(`image-${GLOBAL_STATE.drawing.uuid}`, SVG.outerHTML);
+function saveNow() {
+  saveToLocalStorage(GLOBAL_STATE.drawing.fileName, SVG.outerHTML);
 }
 
-// eslint-disable-next-line no-unused-vars
-function loadFromLocalStorage(uuid) {
-  importSvg(localStorage.getItem(`image-${uuid}`), false);
-}
-
-function loadFiles() {
-  if (GLOBAL_STATE.featureFlags.enableFileManagement) {
-    Object.keys(localStorage).forEach((k) => {
-      if (k.startsWith("image-")) {
-        const div = document.createElement("div");
-        div.textContent = k;
-        ALL_FILES_LIST_DIVS.appendChild(div);
-      }
-    });
+function saveToLocalStorage(fileName, svgStr, isNew = false) {
+  const k = `image-${fileName}`;
+  if (!isNew || localStorage.getItem(k) == null) {
+    try {
+      localStorage.setItem(k, svgStr);
+    } catch {
+      alert(
+        "Browser storage exceeded - this file will be not autosaved. Delete other files and reupload.",
+      );
+    }
+  } else {
+    alert("Image with same name already exists!");
   }
+}
+
+function populateFileBrowser() {
+  FILE_BROWSER_DIV.innerHTML = "";
+  Object.keys(localStorage).forEach((k) => {
+    if (k.startsWith("image-")) {
+      const imageName = k.slice(6);
+      const nameDiv = document.createElement("div");
+      nameDiv.textContent = imageName;
+      nameDiv.dataset.imagename = imageName;
+      nameDiv.classList.add("loaded-file-name");
+
+      const deleteBtnDiv = document.createElement("div");
+      deleteBtnDiv.dataset.imagename = imageName;
+      deleteBtnDiv.textContent = "❌";
+      deleteBtnDiv.classList.add("delete-file-btn", "btn");
+
+      const div = document.createElement("div");
+      div.appendChild(nameDiv);
+      div.appendChild(deleteBtnDiv);
+      div.classList.add("flex-row", "loaded-file-entry", "gappy");
+
+      FILE_BROWSER_DIV.appendChild(div);
+    }
+  });
 }
 
 /********
@@ -1728,5 +1820,5 @@ function loadFiles() {
  ********/
 registerEventListeners();
 registerDropUploadEventHandlers();
-loadFiles();
+setFileBrowserView(GLOBAL_STATE.drawing.fileName);
 svgInit();
