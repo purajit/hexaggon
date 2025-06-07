@@ -14,32 +14,16 @@
       <div class="flex-row gappy">
         <div class="flex-column gappy">
           <div id="layerPicker" class="flex-column overlaid">
-            <button
-              class="layer-picker-btn btn"
-              title="Grid layer (0)"
-              data-controlset="GRID"
-            >
+            <button class="layer-picker-btn btn" title="Grid layer (0)" data-controlset="GRID">
               ⌗
             </button>
-            <button
-              class="layer-picker-btn btn"
-              title="Color layer (1)"
-              data-controlset="COLOR"
-            >
+            <button class="layer-picker-btn btn" title="Color layer (1)" data-controlset="COLOR">
               🎨️
             </button>
-            <button
-              class="layer-picker-btn btn"
-              title="Object layer (2)"
-              data-controlset="OBJECT"
-            >
+            <button class="layer-picker-btn btn" title="Object layer (2)" data-controlset="OBJECT">
               🌳
             </button>
-            <button
-              class="layer-picker-btn btn"
-              title="Path layer (3)"
-              data-controlset="PATH"
-            >
+            <button class="layer-picker-btn btn" title="Path layer (3)" data-controlset="PATH">
               🗺️
             </button>
             <button
@@ -49,34 +33,14 @@
             >
               〰
             </button>
-            <button
-              class="layer-picker-btn btn"
-              title="Text layer (5)"
-              data-controlset="TEXT"
-            >
+            <button class="layer-picker-btn btn" title="Text layer (5)" data-controlset="TEXT">
               📝
             </button>
           </div>
           <div id="toolPicker" class="flex-column overlaid">
-            <button
-              class="tool-picker-btn btn"
-              title="Brush tool (B)"
-              data-tool="BRUSH"
-            >
-              🖌
-            </button>
-            <button
-              class="tool-picker-btn btn"
-              title="Fill tool (G)"
-              data-tool="FILL"
-            >
-              🪣
-            </button>
-            <button
-              class="tool-picker-btn btn"
-              title="Eraser tool (E)"
-              data-tool="ERASER"
-            >
+            <button class="tool-picker-btn btn" title="Brush tool (B)" data-tool="BRUSH">🖌</button>
+            <button class="tool-picker-btn btn" title="Fill tool (G)" data-tool="FILL">🪣</button>
+            <button class="tool-picker-btn btn" title="Eraser tool (E)" data-tool="ERASER">
               🧻
             </button>
             <button
@@ -86,164 +50,49 @@
             >
               💧
             </button>
-            <button
-              class="tool-picker-btn btn"
-              title="Select tool (M)"
-              data-tool="SELECT"
-            >
+            <button class="tool-picker-btn btn" title="Select tool (M)" data-tool="SELECT">
               ⊹
             </button>
-            <button
-              class="tool-picker-btn btn"
-              title="Zoom tool (Z)"
-              data-tool="ZOOM"
-            >
-              ️🔍
-            </button>
+            <button class="tool-picker-btn btn" title="Zoom tool (Z)" data-tool="ZOOM">️🔍</button>
           </div>
         </div>
-        <div
-          class="control-panel flex-column gappy overlaid"
-          data-control="COLOR"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="45"
-            height="45"
-            viewBox="0 0 45 45"
-          >
-            <rect
-              id="chosenSecondaryColor"
-              x="0"
-              y="0"
-              width="30"
-              height="30"
-              stroke="grey"
-            />
-            <rect
-              id="chosenPrimaryColor"
-              x="15"
-              y="15"
-              width="30"
-              height="30"
-              stroke="grey"
-            />
+        <div class="control-panel flex-column gappy overlaid" data-control="COLOR">
+          <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 45 45">
+            <rect id="chosenSecondaryColor" x="0" y="0" width="30" height="30" stroke="grey" />
+            <rect id="chosenPrimaryColor" x="15" y="15" width="30" height="30" stroke="grey" />
           </svg>
           <div id="colorControlPalette" class="flex-row gappy">
             <div class="flex-column gappy">
               <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
               <!-- blues -->
-              <div
-                class="swatch"
-                style="background: #69394d"
-                data-color="#69394d"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #6a8588"
-                data-color="#6a8588"
-              ></div>
+              <div class="swatch" style="background: #69394d" data-color="#69394d"></div>
+              <div class="swatch" style="background: #6a8588" data-color="#6a8588"></div>
               <!-- greens -->
-              <div
-                class="swatch"
-                style="background: #3d5a40"
-                data-color="#3d5a40"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #739d77"
-                data-color="#739d77"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #aab34c"
-                data-color="#aab34c"
-              ></div>
+              <div class="swatch" style="background: #3d5a40" data-color="#3d5a40"></div>
+              <div class="swatch" style="background: #739d77" data-color="#739d77"></div>
+              <div class="swatch" style="background: #aab34c" data-color="#aab34c"></div>
               <!-- browns oranges -->
-              <div
-                class="swatch"
-                style="background: #943636"
-                data-color="#943636"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #b8895f"
-                data-color="#b8895f"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #908a07"
-                data-color="#908a07"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #574d39"
-                data-color="#574d39"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #000000"
-                data-color="#000000"
-              ></div>
+              <div class="swatch" style="background: #943636" data-color="#943636"></div>
+              <div class="swatch" style="background: #b8895f" data-color="#b8895f"></div>
+              <div class="swatch" style="background: #908a07" data-color="#908a07"></div>
+              <div class="swatch" style="background: #574d39" data-color="#574d39"></div>
+              <div class="swatch" style="background: #000000" data-color="#000000"></div>
             </div>
             <div class="flex-column gappy">
-              <div
-                class="swatch"
-                style="background: #535272"
-                data-color="#535272"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #7eaaad"
-                data-color="#7eaaad"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #4a6b4e"
-                data-color="#4a6b4e"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #91b985"
-                data-color="#91b985"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #bfc080"
-                data-color="#bfc080"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #d35540"
-                data-color="#d35540"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #e8aa54"
-                data-color="#e8aa54"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #e4d250"
-                data-color="#e4d250"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #c4b9a5"
-                data-color="#c4b9a5"
-              ></div>
-              <div
-                class="swatch"
-                style="background: #ffffff"
-                data-color="#ffffff"
-              ></div>
+              <div class="swatch" style="background: #535272" data-color="#535272"></div>
+              <div class="swatch" style="background: #7eaaad" data-color="#7eaaad"></div>
+              <div class="swatch" style="background: #4a6b4e" data-color="#4a6b4e"></div>
+              <div class="swatch" style="background: #91b985" data-color="#91b985"></div>
+              <div class="swatch" style="background: #bfc080" data-color="#bfc080"></div>
+              <div class="swatch" style="background: #d35540" data-color="#d35540"></div>
+              <div class="swatch" style="background: #e8aa54" data-color="#e8aa54"></div>
+              <div class="swatch" style="background: #e4d250" data-color="#e4d250"></div>
+              <div class="swatch" style="background: #c4b9a5" data-color="#c4b9a5"></div>
+              <div class="swatch" style="background: #ffffff" data-color="#ffffff"></div>
             </div>
           </div>
         </div>
-        <div
-          class="control-panel flex-column gappy overlaid"
-          data-control="OBJECT"
-        >
+        <div class="control-panel flex-column gappy overlaid" data-control="OBJECT">
           <div class="flex-row gappy">
             <div class="object-btn btn border-box" data-text="🌲">🌲</div>
             <div class="object-btn btn border-box" data-text="🌳">🌳</div>
@@ -285,10 +134,7 @@
             <div class="object-btn btn border-box" data-text="🪵">🪵</div>
           </div>
         </div>
-        <div
-          class="control-panel flex-column gappy overlaid"
-          data-control="TEXT"
-        >
+        <div class="control-panel flex-column gappy overlaid" data-control="TEXT">
           <div class="flex-row gappy">
             <input id="textFontSize" type="number" class="border-box" />
             <div id="textBold" class="btn border-box">B️</div>
@@ -297,10 +143,7 @@
           </div>
           <input id="textInput" placeholder="Text to insert" />
         </div>
-        <div
-          class="control-panel flex-column gappy overlaid"
-          data-control="GRID"
-        >
+        <div class="control-panel flex-column gappy overlaid" data-control="GRID">
           Orientation
           <div class="flex-row gappy">
             <button
@@ -359,110 +202,30 @@
               <div class="flex-column gappy">
                 <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
                 <!-- blues -->
-                <div
-                  class="swatch"
-                  style="background: #69394d"
-                  data-color="#69394d"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #6a8588"
-                  data-color="#6a8588"
-                ></div>
+                <div class="swatch" style="background: #69394d" data-color="#69394d"></div>
+                <div class="swatch" style="background: #6a8588" data-color="#6a8588"></div>
                 <!-- greens -->
-                <div
-                  class="swatch"
-                  style="background: #3d5a40"
-                  data-color="#3d5a40"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #739d77"
-                  data-color="#739d77"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #aab34c"
-                  data-color="#aab34c"
-                ></div>
+                <div class="swatch" style="background: #3d5a40" data-color="#3d5a40"></div>
+                <div class="swatch" style="background: #739d77" data-color="#739d77"></div>
+                <div class="swatch" style="background: #aab34c" data-color="#aab34c"></div>
                 <!-- browns oranges -->
-                <div
-                  class="swatch"
-                  style="background: #943636"
-                  data-color="#943636"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #b8895f"
-                  data-color="#b8895f"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #908a07"
-                  data-color="#908a07"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #574d39"
-                  data-color="#574d39"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #000000"
-                  data-color="#000000"
-                ></div>
+                <div class="swatch" style="background: #943636" data-color="#943636"></div>
+                <div class="swatch" style="background: #b8895f" data-color="#b8895f"></div>
+                <div class="swatch" style="background: #908a07" data-color="#908a07"></div>
+                <div class="swatch" style="background: #574d39" data-color="#574d39"></div>
+                <div class="swatch" style="background: #000000" data-color="#000000"></div>
               </div>
               <div class="flex-column gappy">
-                <div
-                  class="swatch"
-                  style="background: #535272"
-                  data-color="#535272"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #7eaaad"
-                  data-color="#7eaaad"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #4a6b4e"
-                  data-color="#4a6b4e"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #91b985"
-                  data-color="#91b985"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #bfc080"
-                  data-color="#bfc080"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #d35540"
-                  data-color="#d35540"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #e8aa54"
-                  data-color="#e8aa54"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #e4d250"
-                  data-color="#e4d250"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #c4b9a5"
-                  data-color="#c4b9a5"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #ffffff"
-                  data-color="#ffffff"
-                ></div>
+                <div class="swatch" style="background: #535272" data-color="#535272"></div>
+                <div class="swatch" style="background: #7eaaad" data-color="#7eaaad"></div>
+                <div class="swatch" style="background: #4a6b4e" data-color="#4a6b4e"></div>
+                <div class="swatch" style="background: #91b985" data-color="#91b985"></div>
+                <div class="swatch" style="background: #bfc080" data-color="#bfc080"></div>
+                <div class="swatch" style="background: #d35540" data-color="#d35540"></div>
+                <div class="swatch" style="background: #e8aa54" data-color="#e8aa54"></div>
+                <div class="swatch" style="background: #e4d250" data-color="#e4d250"></div>
+                <div class="swatch" style="background: #c4b9a5" data-color="#c4b9a5"></div>
+                <div class="swatch" style="background: #ffffff" data-color="#ffffff"></div>
               </div>
             </div>
           </details>
@@ -472,110 +235,30 @@
               <div class="flex-column gappy">
                 <!-- https://www.drivethrurpg.com/en/product/500717/wuggy-s-hex-tiles -->
                 <!-- blues -->
-                <div
-                  class="swatch"
-                  style="background: #69394d"
-                  data-color="#69394d"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #6a8588"
-                  data-color="#6a8588"
-                ></div>
+                <div class="swatch" style="background: #69394d" data-color="#69394d"></div>
+                <div class="swatch" style="background: #6a8588" data-color="#6a8588"></div>
                 <!-- greens -->
-                <div
-                  class="swatch"
-                  style="background: #3d5a40"
-                  data-color="#3d5a40"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #739d77"
-                  data-color="#739d77"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #aab34c"
-                  data-color="#aab34c"
-                ></div>
+                <div class="swatch" style="background: #3d5a40" data-color="#3d5a40"></div>
+                <div class="swatch" style="background: #739d77" data-color="#739d77"></div>
+                <div class="swatch" style="background: #aab34c" data-color="#aab34c"></div>
                 <!-- browns oranges -->
-                <div
-                  class="swatch"
-                  style="background: #943636"
-                  data-color="#943636"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #b8895f"
-                  data-color="#b8895f"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #908a07"
-                  data-color="#908a07"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #574d39"
-                  data-color="#574d39"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #000000"
-                  data-color="#000000"
-                ></div>
+                <div class="swatch" style="background: #943636" data-color="#943636"></div>
+                <div class="swatch" style="background: #b8895f" data-color="#b8895f"></div>
+                <div class="swatch" style="background: #908a07" data-color="#908a07"></div>
+                <div class="swatch" style="background: #574d39" data-color="#574d39"></div>
+                <div class="swatch" style="background: #000000" data-color="#000000"></div>
               </div>
               <div class="flex-column gappy">
-                <div
-                  class="swatch"
-                  style="background: #535272"
-                  data-color="#535272"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #7eaaad"
-                  data-color="#7eaaad"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #4a6b4e"
-                  data-color="#4a6b4e"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #91b985"
-                  data-color="#91b985"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #bfc080"
-                  data-color="#bfc080"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #d35540"
-                  data-color="#d35540"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #e8aa54"
-                  data-color="#e8aa54"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #e4d250"
-                  data-color="#e4d250"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #c4b9a5"
-                  data-color="#c4b9a5"
-                ></div>
-                <div
-                  class="swatch"
-                  style="background: #ffffff"
-                  data-color="#ffffff"
-                ></div>
+                <div class="swatch" style="background: #535272" data-color="#535272"></div>
+                <div class="swatch" style="background: #7eaaad" data-color="#7eaaad"></div>
+                <div class="swatch" style="background: #4a6b4e" data-color="#4a6b4e"></div>
+                <div class="swatch" style="background: #91b985" data-color="#91b985"></div>
+                <div class="swatch" style="background: #bfc080" data-color="#bfc080"></div>
+                <div class="swatch" style="background: #d35540" data-color="#d35540"></div>
+                <div class="swatch" style="background: #e8aa54" data-color="#e8aa54"></div>
+                <div class="swatch" style="background: #e4d250" data-color="#e4d250"></div>
+                <div class="swatch" style="background: #c4b9a5" data-color="#c4b9a5"></div>
+                <div class="swatch" style="background: #ffffff" data-color="#ffffff"></div>
               </div>
             </div>
           </details>
@@ -585,36 +268,16 @@
     <!-- bottom toolbar -->
     <div class="toolbar flex-row gappy bottom">
       <div class="flex-column overlaid">
-        <button
-          class="non-layer-picker-btn btn"
-          title="Settings"
-          data-controlset="SETTINGS"
-        >
+        <button class="non-layer-picker-btn btn" title="Settings" data-controlset="SETTINGS">
           ⚙️
         </button>
-        <button id="saveBtn" class="btn" title="Save/export map to disk">
-          💾
-        </button>
-        <button
-          id="loadBtn"
-          class="btn"
-          title="Load/import map from disk"
-        ></button>
+        <button id="saveBtn" class="btn" title="Save/export map to disk">💾</button>
+        <button id="loadBtn" class="btn" title="Load/import map from disk"></button>
         <label class="btn" for="fileUpload">📥</label>
-        <input
-          id="fileUpload"
-          class="hidden"
-          type="file"
-          accept="image/svg+xml"
-        />
-        <button class="non-layer-picker-btn btn" data-controlset="FILEBROWSER">
-          🗄
-        </button>
+        <input id="fileUpload" class="hidden" type="file" accept="image/svg+xml" />
+        <button class="non-layer-picker-btn btn" data-controlset="FILEBROWSER">🗄</button>
       </div>
-      <div
-        class="control-panel flex-column gappy overlaid"
-        data-control="SETTINGS"
-      >
+      <div class="control-panel flex-column gappy overlaid" data-control="SETTINGS">
         <!-- TODO: invert drag scrolling -->
         <!-- TODO: dark mode -->
       </div>
