@@ -11,7 +11,8 @@ export default defineConfig([
     ...eslint.configs.recommended,
     files: ["**/*.ts"],
   },
-  tseslint.configs.recommended,
+  tseslint.configs.strict,
+  tseslint.configs.stylistic,
   { files: ["**/*.ts"], languageOptions: { sourceType: "script" } },
   {
     files: ["**/*.{ts}"],

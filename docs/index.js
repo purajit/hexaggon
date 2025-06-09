@@ -885,9 +885,8 @@ function setCanvasColor(previousCanvasColor, color) {
     if (previousCanvasColor == color) {
         return;
     }
-    for (let c = 0; c < GLOBAL_STATE.drawing.hexEntries.length; c++) {
-        for (let r = 0; r < GLOBAL_STATE.drawing.hexEntries[c].length; r++) {
-            const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
+    for (const hexEntriesRow of GLOBAL_STATE.drawing.hexEntries) {
+        for (const hexEntry of hexEntriesRow) {
             if (hexEntry.hex.getAttribute("fill") == previousCanvasColor) {
                 hexEntry.hex.setAttribute("fill", color);
                 hexEntry.minihex.setAttribute("fill", color);
@@ -904,9 +903,8 @@ function setCanvasColor(previousCanvasColor, color) {
     });
 }
 function setGridColor(previousGridColor, color) {
-    for (let c = 0; c < GLOBAL_STATE.drawing.hexEntries.length; c++) {
-        for (let r = 0; r < GLOBAL_STATE.drawing.hexEntries[c].length; r++) {
-            const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
+    for (const hexEntriesRow of GLOBAL_STATE.drawing.hexEntries) {
+        for (const hexEntry of hexEntriesRow) {
             hexEntry.hex.setAttribute("stroke", color);
             hexEntry.minihex.setAttribute("stroke", color);
         }
@@ -920,9 +918,8 @@ function setGridColor(previousGridColor, color) {
 }
 function setGridThickness(thickness) {
     const previousThickness = GLOBAL_STATE.drawing.gridThickness;
-    for (let c = 0; c < GLOBAL_STATE.drawing.hexEntries.length; c++) {
-        for (let r = 0; r < GLOBAL_STATE.drawing.hexEntries[c].length; r++) {
-            const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
+    for (const hexEntriesRow of GLOBAL_STATE.drawing.hexEntries) {
+        for (const hexEntry of hexEntriesRow) {
             hexEntry.hex.setAttribute("stroke-width", `${thickness}px`);
         }
     }
@@ -1367,9 +1364,8 @@ function getSvgLayer(layer) {
     return SVG.getElementById(`${layer}Layer`) || SVG;
 }
 function positionHexes(gridDirection) {
-    for (let c = 0; c < GLOBAL_STATE.drawing.hexEntries.length; c++) {
-        for (let r = 0; r < GLOBAL_STATE.drawing.hexEntries[c].length; r++) {
-            const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
+    for (const hexEntriesRow of GLOBAL_STATE.drawing.hexEntries) {
+        for (const hexEntry of hexEntriesRow) {
             const { x, y, points } = getHexVertixes(hexEntry.c, hexEntry.r, gridDirection);
             hexEntry.x = x;
             hexEntry.y = y;
@@ -1397,12 +1393,11 @@ function drawHex(c, r) {
 }
 function initMiniMap(x, y, width, height) {
     MINIMAP_PREVIEW.innerHTML = "";
-    for (let c = 0; c < GLOBAL_STATE.drawing.hexEntries.length; c++) {
-        for (let r = 0; r < GLOBAL_STATE.drawing.hexEntries[c].length; r++) {
-            const hexEntry = GLOBAL_STATE.drawing.hexEntries[c][r];
+    for (const hexEntriesRow of GLOBAL_STATE.drawing.hexEntries) {
+        for (const hexEntry of hexEntriesRow) {
             let pointsStr = "";
-            for (let i = 0; i < hexEntry.hex.points.length; i++) {
-                pointsStr += `${hexEntry.hex.points[i].x},${hexEntry.hex.points[i].y} `;
+            for (const hexPoint of hexEntry.hex.points) {
+                pointsStr += `${hexPoint.x},${hexPoint.y} `;
             }
             const minihex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
             minihex.setAttribute("c", hexEntry.c);
