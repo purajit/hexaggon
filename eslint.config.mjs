@@ -3,17 +3,18 @@ import globals from "globals";
 
 import css from "@eslint/css";
 import html from "@html-eslint/eslint-plugin";
-import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import eslint from "@eslint/js";
 
 export default defineConfig([
   {
-    files: ["**/*.{js,mjs,cjs}"],
-    plugins: { js },
-    extends: ["js/recommended"],
+    ...eslint.configs.recommended,
+    files: ["**/*.ts"],
   },
-  { files: ["**/*.js"], languageOptions: { sourceType: "script" } },
+  tseslint.configs.recommended,
+  { files: ["**/*.ts"], languageOptions: { sourceType: "script" } },
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ["**/*.{ts}"],
     languageOptions: { globals: globals.browser },
   },
   {

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "./docs",
+    "target": "es2020"
+    // "noUncheckedIndexedAccess": true,
+    // "noPropertyAccessFromIndexSignature": true
+    // "exactOptionalPropertyTypes": true
+    // "strict": true
+    // "strictNullChecks": true
+    // "noImplicitAny": true,
+    // "strictPropertyInitialization": true
+  },
+  "include": ["./ts/**/*"]
+}
