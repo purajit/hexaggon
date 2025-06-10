@@ -3,12 +3,9 @@
     "outDir": "./docs",
     "target": "es2020",
     "noUncheckedIndexedAccess": true,
-    "noPropertyAccessFromIndexSignature": true,
-    // "exactOptionalPropertyTypes": true // needs strictNullChecks
+    "noPropertyAccessFromIndexSignature": true
+    // "exactOptionalPropertyTypes": true
     // "strict": true
-    // "strictNullChecks": true
-    "noImplicitAny": true
-    // "strictPropertyInitialization": true // strictNullChecks
   },
   "include": ["./ts/**/*"]
 }
