@@ -128,6 +128,7 @@ const GLOBAL_STATE = {
         },
     },
 };
+const HEXAGGON_DIV = document.getElementById("hexaggon");
 // the main drawing
 const FILE_NAME_DIV = document.getElementById("fileName");
 const SVG = document.getElementById("hexmap");
@@ -434,7 +435,7 @@ function registerEventListeners() {
             GLOBAL_STATE.mouseState.holdingRightClick = e.button == 2;
             if (target.classList.contains("hex")) {
                 const hexAtMouse = target;
-                handleHexInteraction(parseInt(hexAtMouse.getAttribute("c")), parseInt(hexAtMouse.getAttribute("r")), e.clientX, e.clientY);
+                handleHexInteraction(parseInt(hexAtMouse.dataset["c"]), parseInt(hexAtMouse.dataset["r"]), e.clientX, e.clientY);
             }
         }
         else if (e.buttons == 4) {
@@ -462,12 +463,12 @@ function registerEventListeners() {
                         action: "erased",
                         target: {
                             fromCR: {
-                                c: parseInt(target.getAttribute("c1")),
-                                r: parseInt(target.getAttribute("r1")),
+                                c: parseInt(target.dataset["c1"]),
+                                r: parseInt(target.dataset["r1"]),
                             },
                             toCR: {
-                                c: parseInt(target.getAttribute("c2")),
-                                r: parseInt(target.getAttribute("r2")),
+                                c: parseInt(target.dataset["c2"]),
+                                r: parseInt(target.dataset["r2"]),
                             },
                             lineColor: path.getAttribute("stroke"),
                             highlightColor: target.getAttribute("stroke"),
@@ -480,8 +481,9 @@ function registerEventListeners() {
                     }
                     getSvgLayer(ControlSets.BOUNDARY).removeChild(target);
                     MINIMAP_PREVIEW.querySelectorAll(".miniboundary").forEach((t) => {
-                        if (t.getAttribute("from-crn") == target.getAttribute("from-crn") &&
-                            t.getAttribute("to-crn") == target.getAttribute("to-crn") &&
+                        if (t instanceof SVGLineElement &&
+                            t.dataset["fromcrn"] == target.dataset["fromcrn"] &&
+                            t.dataset["tocrn"] == target.dataset["tocrn"] &&
                             t.getAttribute("stroke") == target.getAttribute("stroke")) {
                             MINIMAP_PREVIEW.removeChild(t);
                         }
@@ -490,8 +492,8 @@ function registerEventListeners() {
                         type: "boundary",
                         action: "erased",
                         target: {
-                            fromCRN: target.getAttribute("from-crn"),
-                            toCRN: target.getAttribute("to-crn"),
+                            fromCRN: target.dataset["fromcrn"],
+                            toCRN: target.dataset["tocrn"],
                             color: target.getAttribute("stroke"),
                         },
                     });
@@ -524,7 +526,7 @@ function registerEventListeners() {
             target instanceof SVGPolygonElement &&
             target.classList.contains("hex")) {
             const hexAtMouse = target;
-            handleHexInteraction(parseInt(hexAtMouse.getAttribute("c")), parseInt(hexAtMouse.getAttribute("r")), e.clientX, e.clientY);
+            handleHexInteraction(parseInt(hexAtMouse.dataset["c"]), parseInt(hexAtMouse.dataset["r"]), e.clientX, e.clientY);
         }
     });
     SVG.addEventListener("mouseup", () => {
@@ -542,7 +544,7 @@ function registerEventListeners() {
     SVG.addEventListener("contextmenu", (e) => e.preventDefault());
     SVG.addEventListener("wheel", (e) => {
         e.preventDefault();
-        if (GLOBAL_STATE.keyState.holdingMeta) {
+        if (GLOBAL_STATE.keyState.holdingMeta || e.ctrlKey) {
             let scale = e.deltaY / 100;
             scale = Math.abs(scale) > 0.1 ? (0.1 * e.deltaY) / Math.abs(e.deltaY) : scale;
             zoomSvg(scale, e.clientX, e.clientY);
@@ -612,7 +614,7 @@ function setFileBrowserView(fileName) {
 }
 function clearWelcomeScreen() {
     WELCOME_CONTAINER_DIV.classList.add("hidden");
-    document.getElementById("hexaggon").classList.remove("frosted");
+    HEXAGGON_DIV.classList.remove("frosted");
 }
 /************************
  * GLOBAL FUNCTIONALITY *
@@ -814,15 +816,17 @@ function undoLastAction() {
                 const target = lastAction.target;
                 if (action == "added") {
                     SVG.querySelectorAll(".boundary").forEach((t) => {
-                        if (t.getAttribute("from-crn") == target.fromCRN &&
-                            t.getAttribute("to-crn") == target.toCRN &&
+                        if (t instanceof SVGLineElement &&
+                            t.dataset["fromcrn"] == target.fromCRN &&
+                            t.dataset["tocrn"] == target.toCRN &&
                             t.getAttribute("stroke") == target.color) {
                             getSvgLayer(ControlSets.BOUNDARY).removeChild(t);
                         }
                     });
                     MINIMAP_PREVIEW.querySelectorAll(".miniboundary").forEach((t) => {
-                        if (t.getAttribute("from-crn") == target.fromCRN &&
-                            t.getAttribute("to-crn") == target.toCRN &&
+                        if (t instanceof SVGLineElement &&
+                            t.dataset["fromcrn"] == target.fromCRN &&
+                            t.dataset["tocrn"] == target.toCRN &&
                             t.getAttribute("stroke") == target.color) {
                             MINIMAP_PREVIEW.removeChild(t);
                         }
@@ -864,10 +868,11 @@ function undoLastAction() {
                 const target = lastAction.target;
                 if (action == "added") {
                     SVG.querySelectorAll(".path-highlight, .path").forEach((e) => {
-                        if (parseInt(e.getAttribute("c1")) == target.fromCR.c &&
-                            parseInt(e.getAttribute("r1")) == target.fromCR.r &&
-                            parseInt(e.getAttribute("c2")) == target.toCR.c &&
-                            parseInt(e.getAttribute("r2")) == target.toCR.r) {
+                        if (e instanceof SVGLineElement &&
+                            parseInt(e.dataset["c1"]) == target.fromCR.c &&
+                            parseInt(e.dataset["r1"]) == target.fromCR.r &&
+                            parseInt(e.dataset["c2"]) == target.toCR.c &&
+                            parseInt(e.dataset["r2"]) == target.toCR.r) {
                             if ((e.classList.contains("path") && e.getAttribute("stroke") == target.lineColor) ||
                                 (e.classList.contains("path-highlight") &&
                                     e.getAttribute("stroke") == target.highlightColor)) {
@@ -906,8 +911,9 @@ function setCanvasColor(previousCanvasColor, color) {
             }
         }
     }
+    HEXAGGON_DIV.style.background = color;
     GLOBAL_STATE.layers.GRID.canvasColor = color;
-    SVG.setAttribute("canvasColor", color);
+    SVG.dataset["canvasColor"] = color;
     addToUndoStack({
         type: "canvasColor",
         old: previousCanvasColor,
@@ -925,7 +931,7 @@ function setGridColor(previousGridColor, color) {
         e.setAttribute("stroke", color);
     }
     GLOBAL_STATE.layers.GRID.gridColor = color;
-    SVG.setAttribute("gridColor", color);
+    SVG.dataset["gridColor"] = color;
     addToUndoStack({ type: "gridColor", old: previousGridColor, new: color });
 }
 function setGridThickness(thickness) {
@@ -945,7 +951,7 @@ function setGridThickness(thickness) {
 }
 function setGridDirection(gridDirection) {
     GLOBAL_STATE.drawing.gridDirection = gridDirection;
-    SVG.setAttribute("gridDirection", gridDirection);
+    SVG.dataset["gridDirection"] = gridDirection;
     for (const b of GRID_DIRECTION_BUTTONS) {
         if (b.dataset["direction"] == gridDirection) {
             b.classList.add("primaryselected");
@@ -1037,8 +1043,8 @@ function placeObjectOnHex(c, r, objectToUse = null) {
     // we didn't have an object here before
     if (!oldObject) {
         const hexObject = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        hexObject.setAttribute("c", c.toString());
-        hexObject.setAttribute("r", r.toString());
+        hexObject.dataset["c"] = c.toString();
+        hexObject.dataset["r"] = r.toString();
         hexObject.setAttribute("x", hexEntry.hex.getAttribute("x"));
         hexObject.setAttribute("y", hexEntry.hex.getAttribute("y"));
         hexObject.classList.add("no-pointer-events", "hex-object", `layer-${ControlSets.OBJECT}`);
@@ -1069,24 +1075,24 @@ function drawLineAndHighlight(fromHexEntry, toHexEntry, lineColor, highlightColo
     line.setAttribute("stroke", lineColor);
     line.setAttribute("x1", fromHexEntry.x.toString());
     line.setAttribute("y1", fromHexEntry.y.toString());
-    line.setAttribute("c1", fromHexEntry.c.toString());
-    line.setAttribute("r1", fromHexEntry.r.toString());
+    line.dataset["c1"] = fromHexEntry.c.toString();
+    line.dataset["r1"] = fromHexEntry.r.toString();
     line.setAttribute("x2", toHexEntry.x.toString());
     line.setAttribute("y2", toHexEntry.y.toString());
-    line.setAttribute("c2", toHexEntry.c.toString());
-    line.setAttribute("r2", toHexEntry.r.toString());
+    line.dataset["c2"] = toHexEntry.c.toString();
+    line.dataset["r2"] = toHexEntry.r.toString();
     line.classList.add("path", `layer-${ControlSets.PATH}`);
     line.id = `path-${id}`;
     const lineHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
     lineHighlight.setAttribute("stroke", highlightColor);
     lineHighlight.setAttribute("x1", fromHexEntry.x.toString());
     lineHighlight.setAttribute("y1", fromHexEntry.y.toString());
-    lineHighlight.setAttribute("c1", fromHexEntry.c.toString());
-    lineHighlight.setAttribute("r1", fromHexEntry.r.toString());
+    lineHighlight.dataset["c1"] = fromHexEntry.c.toString();
+    lineHighlight.dataset["r1"] = fromHexEntry.r.toString();
     lineHighlight.setAttribute("x2", toHexEntry.x.toString());
     lineHighlight.setAttribute("y2", toHexEntry.y.toString());
-    lineHighlight.setAttribute("c2", toHexEntry.c.toString());
-    lineHighlight.setAttribute("r2", toHexEntry.r.toString());
+    lineHighlight.dataset["c2"] = toHexEntry.c.toString();
+    lineHighlight.dataset["r2"] = toHexEntry.r.toString();
     lineHighlight.classList.add("path-highlight", `layer-${ControlSets.PATH}`, `eraseable-${ControlSets.PATH}`);
     lineHighlight.id = id;
     addToUndoStack({
@@ -1156,8 +1162,8 @@ function drawBoundary(e) {
     const lastCRN = GLOBAL_STATE.layers.BOUNDARY.lastCRN;
     // if we're not on one of the neigh of the lastCRN, do nothing. Cuts a lot of calculations
     if (!currentHex.classList.contains("hex") ||
-        Math.abs(lastCRN.c - parseInt(currentHex.getAttribute("c"))) > 1 ||
-        Math.abs(lastCRN.r - parseInt(currentHex.getAttribute("r"))) > 1) {
+        Math.abs(lastCRN.c - parseInt(currentHex.dataset["c"])) > 1 ||
+        Math.abs(lastCRN.r - parseInt(currentHex.dataset["r"])) > 1) {
         return;
     }
     const pt = new DOMPoint(e.x, e.y).matrixTransform(SVG.getScreenCTM().inverse());
@@ -1179,8 +1185,8 @@ function drawBoundary(e) {
         }
     }
     const closestCRN = {
-        c: parseInt(currentHex.getAttribute("c")),
-        r: parseInt(currentHex.getAttribute("r")),
+        c: parseInt(currentHex.dataset["c"]),
+        r: parseInt(currentHex.dataset["r"]),
         n: closestN,
     };
     // we only want to draw boundary lines on top of existing hex edges.
@@ -1214,10 +1220,10 @@ function drawBoundaryLine(fromCRN, toCRN, color) {
     minimapLine.setAttribute("x2", toHexVertex.x.toString());
     line.setAttribute("y2", toHexVertex.y.toString());
     minimapLine.setAttribute("y2", toHexVertex.y.toString());
-    line.setAttribute("from-crn", fromCRNStr);
-    minimapLine.setAttribute("from-crn", fromCRNStr);
-    line.setAttribute("to-crn", toCRNStr);
-    minimapLine.setAttribute("to-crn", toCRNStr);
+    line.dataset["fromcrn"] = fromCRNStr;
+    minimapLine.dataset["fromcrn"] = fromCRNStr;
+    line.dataset["tocrn"] = toCRNStr;
+    minimapLine.dataset["tocrn"] = toCRNStr;
     line.setAttribute("stroke", color);
     minimapLine.setAttribute("stroke", color);
     line.classList.add("boundary", `layer-${ControlSets.BOUNDARY}`, `eraseable-${ControlSets.BOUNDARY}`);
@@ -1399,8 +1405,8 @@ function positionHexes(gridDirection) {
 function drawHex(c, r) {
     const hex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
     hex.setAttribute("stroke-width", `${GLOBAL_STATE.drawing.gridThickness}px`);
-    hex.setAttribute("c", c.toString());
-    hex.setAttribute("r", r.toString());
+    hex.dataset["c"] = c.toString();
+    hex.dataset["r"] = r.toString();
     hex.classList.add("hex");
     getSvgLayer("HEX").appendChild(hex);
     const hexEntry = { hex, minihex: null, hexObject: null, x: null, y: null, c, r };
@@ -1415,8 +1421,8 @@ function initMiniMap(x, y, width, height) {
                 pointsStr += `${hexPoint.x},${hexPoint.y} `;
             }
             const minihex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            minihex.setAttribute("c", hexEntry.c.toString());
-            minihex.setAttribute("r", hexEntry.r.toString());
+            minihex.dataset["c"] = hexEntry.c.toString();
+            minihex.dataset["r"] = hexEntry.r.toString();
             minihex.setAttribute("points", pointsStr);
             minihex.setAttribute("fill", hexEntry.hex.getAttribute("fill"));
             minihex.classList.add("minihex");
@@ -1433,7 +1439,7 @@ function initMiniMap(x, y, width, height) {
 }
 function svgInit() {
     GLOBAL_STATE.undoRedo.pauseUndoStack = true;
-    SVG.setAttribute("gridDirection", GLOBAL_STATE.drawing.gridDirection);
+    SVG.dataset["gridDirection"] = GLOBAL_STATE.drawing.gridDirection;
     SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     GLOBAL_STATE.drawing.hexEntries = [];
     Array.prototype.slice.call(document.getElementsByTagName("polygon")).forEach((e) => {
@@ -1480,7 +1486,7 @@ function loadSvg(svgStr) {
     for (const c of uploadedSvg.getElementsByTagName("style")) {
         uploadedSvg.removeChild(c);
     }
-    setGridDirection(uploadedSvg.getAttribute("gridDirection"));
+    setGridDirection(uploadedSvg.dataset["gridDirection"]);
     const styleElement = SVG.getElementsByTagName("style")[0];
     SVG.innerHTML = uploadedSvg.innerHTML;
     SVG.appendChild(styleElement);
@@ -1491,8 +1497,8 @@ function loadSvg(svgStr) {
             console.log("unexpected error with uploaded svg: hex not polygon");
             return;
         }
-        const c = parseInt(hex.getAttribute("c"));
-        const r = parseInt(hex.getAttribute("r"));
+        const c = parseInt(hex.dataset["c"]);
+        const r = parseInt(hex.dataset["r"]);
         const x = parseFloat(hex.getAttribute("x"));
         const y = parseFloat(hex.getAttribute("y"));
         if (!hexesMap.has(c)) {
@@ -1516,17 +1522,28 @@ function loadSvg(svgStr) {
             console.log("unexpected error with uploaded svg: hex object not text");
             return;
         }
-        const c = parseInt(hexObject.getAttribute("c"));
-        const r = parseInt(hexObject.getAttribute("r"));
-        GLOBAL_STATE.drawing.hexEntries[c][r].hexObject = hexObject;
+        const c = parseInt(hexObject.dataset["c"]);
+        const r = parseInt(hexObject.dataset["r"]);
+        const hexEntry = GLOBAL_STATE.drawing.hexEntries[c]?.[r];
+        if (hexEntry === undefined) {
+            console.log("unexpected error - cr of hex object doesn't exist");
+            return;
+        }
+        hexEntry.hexObject = hexObject;
     });
     const bbox = SVG.getBBox();
     const midX = (bbox.width - window.innerWidth) / 2;
     const midY = (bbox.height - window.innerHeight) / 2;
     SVG.setAttribute("viewBox", `${midX} ${midY} ${window.innerWidth} ${window.innerHeight}`);
     initMiniMap(midX, midY, window.innerWidth, window.innerHeight);
-    setCanvasColor(null, uploadedSvg.getAttribute("canvasColor"));
-    setGridColor(null, uploadedSvg.getAttribute("gridColor"));
+    const canvasColor = uploadedSvg.dataset["canvasColor"];
+    const gridColor = uploadedSvg.dataset["gridColor"];
+    if (canvasColor) {
+        setCanvasColor(null, canvasColor);
+    }
+    if (gridColor) {
+        setGridColor(null, gridColor);
+    }
     switchToControlSet(ControlSets.COLOR);
     clearWelcomeScreen();
     GLOBAL_STATE.undoRedo.pauseUndoStack = false;
