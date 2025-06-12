@@ -384,6 +384,7 @@ function registerEventListeners() {
     for (const b of GRID_DIRECTION_BUTTONS) {
         b.addEventListener("click", () => {
             positionHexes(b.dataset["direction"]);
+            repositionPaths();
             setGridDirection(b.dataset["direction"]);
             const bbox = SVG.getBBox();
             initMiniMap(bbox.x, bbox.y, bbox.width, bbox.height);
@@ -559,6 +560,9 @@ function registerEventListeners() {
             scrollSvg(e.deltaX, e.deltaY);
         }
     });
+}
+function logUnexpectedError(msg) {
+    console.log(`Unexpected error: ${msg}`);
 }
 /************************************
  * COORDINATING GLOBAL STATE AND UI *
@@ -1090,6 +1094,32 @@ function placeObjectOnHex(c, r, objectToUse = null) {
 /****************************
  * PATH LAYER FUNCTIONALITY *
  ****************************/
+function repositionPaths() {
+    for (const path of SVG.getElementsByClassName("path")) {
+        if (!(path instanceof SVGLineElement)) {
+            logUnexpectedError("non-line path element");
+            continue;
+        }
+        const hexEntry1 = GLOBAL_STATE.drawing.hexEntries[parseInt(path.dataset["c1"])][parseInt(path.dataset["r1"])];
+        const hexEntry2 = GLOBAL_STATE.drawing.hexEntries[parseInt(path.dataset["c2"])][parseInt(path.dataset["r2"])];
+        path.setAttribute("x1", hexEntry1.x.toString());
+        path.setAttribute("y1", hexEntry1.y.toString());
+        path.setAttribute("x2", hexEntry2.x.toString());
+        path.setAttribute("y2", hexEntry2.y.toString());
+    }
+    for (const path of SVG.getElementsByClassName("path-highlight")) {
+        if (!(path instanceof SVGLineElement)) {
+            logUnexpectedError("non-line path-highlight element");
+            continue;
+        }
+        const hexEntry1 = GLOBAL_STATE.drawing.hexEntries[parseInt(path.dataset["c1"])][parseInt(path.dataset["r1"])];
+        const hexEntry2 = GLOBAL_STATE.drawing.hexEntries[parseInt(path.dataset["c2"])][parseInt(path.dataset["r2"])];
+        path.setAttribute("x1", hexEntry1.x.toString());
+        path.setAttribute("y1", hexEntry1.y.toString());
+        path.setAttribute("x2", hexEntry2.x.toString());
+        path.setAttribute("y2", hexEntry2.y.toString());
+    }
+}
 function drawLineAndHighlight(fromHexEntry, toHexEntry, lineColor, highlightColor) {
     const id = crypto.randomUUID();
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1311,8 +1341,9 @@ function freeDragScroll(e) {
 function scrollSvg(xdiff, ydiff) {
     const viewBox = SVG.getAttribute("viewBox");
     const [x, y, width, height] = viewBox.split(" ").map(Number);
-    const newX = x + xdiff;
-    const newY = y + ydiff;
+    const scale = width / window.innerWidth;
+    const newX = x + Math.round(xdiff * scale);
+    const newY = y + Math.round(ydiff * scale);
     SVG.setAttribute("viewBox", `${newX} ${newY} ${width} ${height}`);
     MINIMAP_VIEWBOX.setAttribute("x", newX.toString());
     MINIMAP_VIEWBOX.setAttribute("y", newY.toString());
@@ -1515,7 +1546,7 @@ function loadSvg(svgStr) {
     const hexesMap = new Map();
     SVG.querySelectorAll(".hex").forEach((hex) => {
         if (!(hex instanceof SVGPolygonElement)) {
-            console.log("unexpected error with uploaded svg: hex not polygon");
+            logUnexpectedError("hex not polygon in uploaded svg");
             return;
         }
         const c = parseInt(hex.dataset["c"]);
@@ -1540,14 +1571,14 @@ function loadSvg(svgStr) {
     }
     SVG.querySelectorAll(".hex-object").forEach((hexObject) => {
         if (!(hexObject instanceof SVGTextElement)) {
-            console.log("unexpected error with uploaded svg: hex object not text");
+            logUnexpectedError("hex object not text in uploaded svg");
             return;
         }
         const c = parseInt(hexObject.dataset["c"]);
         const r = parseInt(hexObject.dataset["r"]);
         const hexEntry = GLOBAL_STATE.drawing.hexEntries[c]?.[r];
         if (hexEntry === undefined) {
-            console.log("unexpected error - cr of hex object doesn't exist");
+            logUnexpectedError("cr of hex object doesn't exist");
             return;
         }
         hexEntry.hexObject = hexObject;
