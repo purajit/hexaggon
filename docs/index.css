@@ -16,7 +16,7 @@
     --background-color: light-dark(#ffffff, #1b1b1b);
     --panel-background-color: light-dark(rgba(228, 228, 228, 0.7), rgba(27, 27, 27, 0.7));
     --font-color: light-dark(#000000, #ffffff);
-    --disabled-btn-color: light-dark(#cccccc, #444);
+    --disabled-btn-color: light-dark(rgba(204, 204, 204, 0.7), rgba(68, 68, 68, 0.7));
     --shadow-color: light-dark(#cccccc, #444444);
     --selected-btn-color: rgba(144, 185, 133, 0.7);
     --selected-border-color: light-dark(#000000, #ffffff);
@@ -110,6 +110,7 @@ body {
     justify-content: center;
     font-size: 21px;
     border: none;
+    text-shadow: 0 0 2px #444;
 }
 
 .btn > label {
@@ -123,6 +124,14 @@ body {
     padding: 1rem;
     position: absolute;
     max-height: 100%;
+}
+
+.top-center {
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    width: fit-content;
+    margin-right: auto;
 }
 
 .bottom {
@@ -182,16 +191,14 @@ body {
     cursor: pointer;
     align-content: center;
     border-radius: 10px;
-    padding-left: 10px;
 }
 
 #fileName {
     padding: 5px;
-    border-bottom: 3px solid green;
-    max-width: 110px;
     overflow: hidden;
     text-overflow: clip;
     white-space: nowrap;
+    background: transparent;
 }
 
 #fileName:focus {
@@ -218,11 +225,13 @@ body {
 .flex-row {
     display: flex;
     flex-direction: row;
+    justify-content: center;
 }
 
 .flex-column {
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
 .gappy {
@@ -292,7 +301,7 @@ input[type="range"]::-webkit-slider-runnable-track {
     margin: 0;
     width: 100%;
     cursor: pointer;
-    background: linear-gradient(to bottom right, transparent 50%, #464646 50%);
+    background: linear-gradient(to bottom right, transparent 50%, var(--background-color) 50%);
 }
 
 input[type="range"]::-moz-range-track {
@@ -300,7 +309,7 @@ input[type="range"]::-moz-range-track {
     margin: 0;
     width: 100%;
     cursor: pointer;
-    background: linear-gradient(to bottom right, transparent 50%, #464646 50%);
+    background: linear-gradient(to bottom right, transparent 50%, var(--background-color) 50%);
 }
 
 input[type="range"]::-webkit-slider-thumb {
