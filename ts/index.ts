@@ -428,6 +428,9 @@ function registerEventListeners() {
       case "KeyE":
         switchToTool(Tools.ERASER);
         break;
+      case "KeyF":
+        toggleFullscreen();
+        break;
       case "KeyL":
         switchToTool(Tools.LINE);
         break;
@@ -502,6 +505,10 @@ function registerEventListeners() {
 
   SAVE_BUTTON.addEventListener("click", () => {
     exportToSvg();
+  });
+
+  document.getElementById("fullscreenBtn").addEventListener("click", () => {
+    toggleFullscreen();
   });
 
   FILE_BROWSER_DIV.addEventListener("click", (e) => {
@@ -830,6 +837,14 @@ function setFileBrowserView(fileName: string) {
     } else {
       b.classList.remove("selected");
     }
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    HEXAGGON_DIV.requestFullscreen();
+  } else {
+    document.exitFullscreen();
   }
 }
 
@@ -1929,7 +1944,7 @@ function populateFileBrowser() {
       const deleteBtnDiv = document.createElement("div");
       deleteBtnDiv.dataset["imagename"] = imageName;
       deleteBtnDiv.textContent = "❌";
-      deleteBtnDiv.classList.add("delete-file-btn", "btn");
+      deleteBtnDiv.classList.add("delete-file-btn");
 
       const div = document.createElement("div");
       div.appendChild(nameDiv);

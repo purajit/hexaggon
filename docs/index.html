@@ -9,8 +9,40 @@
 <body>
   <div id="hexaggon" class="frosted">
     <!-- top toolbar -->
+    <div class="toolbar flex-column gappy top-center">
+      <div class="flex-row gappy">
+        <div class="overlaid flex-row">
+          <div id="fileName" contenteditable="true" class="overlaid">File name</div>
+          <button class="non-layer-picker-btn btn" data-controlset="FILEBROWSER">▼</button>
+        </div>
+        <div class="">
+          <button id="saveBtn" class="btn" title="Save/export map to disk">💾</button>
+        </div>
+        <div class="">
+          <label class="btn" for="fileUpload">📂</label>
+          <input id="fileUpload" class="hidden" type="file" accept="image/svg+xml" />
+        </div>
+        <div class="">
+          <button id="fullscreenBtn" class="btn">🖥️</button>
+        </div>
+        <div class="">
+          <button class="non-layer-picker-btn btn" title="Settings" data-controlset="SETTINGS">
+            ⚙️
+          </button>
+        </div>
+      </div>
+      <div
+        id="fileBrowser"
+        class="control-panel flex-column overlaid"
+        data-control="FILEBROWSER"
+      ></div>
+      <div class="control-panel flex-column gappy overlaid" data-control="SETTINGS">
+        <!-- TODO: invert drag scrolling -->
+        <!-- TODO: dark mode -->
+      </div>
+    </div>
+    <!-- top-left toolbar -->
     <div class="toolbar flex-column gappy">
-      <div id="fileName" contenteditable="true" class="overlaid">File name</div>
       <div class="flex-row gappy">
         <div class="flex-column gappy">
           <div id="layerPicker" class="flex-column overlaid">
@@ -265,29 +297,7 @@
         </div>
       </div>
     </div>
-    <!-- bottom toolbar -->
-    <div class="toolbar flex-row gappy bottom">
-      <div class="flex-column overlaid">
-        <button class="non-layer-picker-btn btn" title="Settings" data-controlset="SETTINGS">
-          ⚙️
-        </button>
-        <button id="saveBtn" class="btn" title="Save/export map to disk">💾</button>
-        <button id="loadBtn" class="btn" title="Load/import map from disk"></button>
-        <label class="btn" for="fileUpload">📥</label>
-        <input id="fileUpload" class="hidden" type="file" accept="image/svg+xml" />
-        <button class="non-layer-picker-btn btn" data-controlset="FILEBROWSER">🗄</button>
-      </div>
-      <div class="control-panel flex-column gappy overlaid" data-control="SETTINGS">
-        <!-- TODO: invert drag scrolling -->
-        <!-- TODO: dark mode -->
-      </div>
-      <div
-        id="fileBrowser"
-        class="control-panel flex-column overlaid"
-        data-control="FILEBROWSER"
-      ></div>
-    </div>
-    <!-- right toolbar -->
+    <!-- top-right toolbar -->
     <div class="toolbar right-aligned">
       <div class="overlaid control-panel" data-control="MINIMAP">
         <svg id="minimap">
