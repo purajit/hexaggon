@@ -820,6 +820,15 @@ function undoLastAction() {
             case "color":
                 colorHex(lastAction.target.cr.c, lastAction.target.cr.r, lastAction.old);
                 break;
+            // {type: floodFill, old, target: {floodTargets: ["c1,r2", ...]}}
+            case "floodFill": {
+                const floodTargets = lastAction.target.floodTargets;
+                for (const floodTarget of floodTargets) {
+                    const cr = floodTarget.split(",").map(Number);
+                    colorHex(cr[0], cr[1], lastAction.old, true);
+                }
+                break;
+            }
             // {type: "object", old, new, target: [c, r]}
             case "object":
                 placeObjectOnHex(lastAction.target.cr.c, lastAction.target.cr.r, lastAction.old);
@@ -998,17 +1007,11 @@ function colorHex(c, r, fillColor = null, isFloodFill = false) {
             target: { cr: { c, r } },
         });
     }
-    // easy way to test hex neighbor logic
-    // getHexNeighbors(c, r).forEach(h => {
-    //   console.log(h)
-    //   const neighborhex = GLOBAL_STATE.drawing.hexEntries[h[0]][h[1]].hex;
-    //   neighborhex.setAttribute("fill", "black");
-    // });
 }
 function floodFill(startC, startR, fn) {
     const queue = [[startC, startR]];
     const visited = [`${startC},${startR}`];
-    const expectedFill = GLOBAL_STATE.drawing.hexEntries[startC][startR].hex.getAttribute("fill");
+    const oldFillColor = GLOBAL_STATE.drawing.hexEntries[startC][startR].hex.getAttribute("fill");
     while (queue.length > 0) {
         const [c, r] = queue.shift();
         getHexNeighbors(c, r).forEach((n) => {
@@ -1024,7 +1027,7 @@ function floodFill(startC, startR, fn) {
             if (nhexentry == null)
                 return;
             const nhex = nhexentry.hex;
-            if (nhex.getAttribute("fill") != expectedFill)
+            if (nhex.getAttribute("fill") != oldFillColor)
                 return;
             queue.push(n);
             visited.push(stringedCoords);
@@ -1034,7 +1037,11 @@ function floodFill(startC, startR, fn) {
         const cr = s.split(",").map(Number);
         fn(cr[0], cr[1], null, true);
     });
-    // addToUndoStack({type: "floodFill", old: oldFillColor, new: fillColor, target: [c, r]});
+    addToUndoStack({
+        type: "floodFill",
+        old: oldFillColor,
+        target: { floodTargets: visited },
+    });
 }
 /******************************
  * OBJECT LAYER FUNCTIONALITY *
@@ -1371,7 +1378,7 @@ function hexIndexToPixel(c, r, gridDirection) {
     return { x, y };
 }
 function roundForHex(num) {
-    return Math.round((num + Number.EPSILON) * 100) / 100;
+    return Math.ceil(num);
 }
 function getHexVertixes(c, r, gridDirection) {
     const { x, y } = hexIndexToPixel(c, r, gridDirection);
