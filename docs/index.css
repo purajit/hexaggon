@@ -63,8 +63,9 @@ body {
     font-size: 70px;
 }
 
-.normaltext {
+.disclaimer {
     font-size: 30px;
+    max-width: 600px;
 }
 
 .brushcursor {
@@ -145,7 +146,7 @@ body {
 }
 
 .frosted {
-    filter: blur(5px);
+    filter: blur(10px);
 }
 
 .control-panel {
@@ -188,6 +189,17 @@ body {
     width: 30px;
 }
 
+.loaded-file-entry {
+    width: 300px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+    align-content: center;
+    padding: 5px;
+    border-radius: 10px;
+}
+
 .loaded-file-name {
     width: 300px;
     text-overflow: ellipsis;
@@ -195,7 +207,10 @@ body {
     overflow: hidden;
     cursor: pointer;
     align-content: center;
-    border-radius: 10px;
+}
+
+.loaded-file-entry:hover {
+    background: rgba(255, 255, 255, 0.4);
 }
 
 #fileName {

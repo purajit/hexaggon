@@ -64,15 +64,10 @@ const CONTROL_PANEL_COMPATIBILITY = {
     [ControlSets.FILEBROWSER]: [ControlPanels.FILEBROWSER, ControlPanels.MINIMAP],
 };
 const GLOBAL_STATE = {
-    // this is the only part that should be impacted during init/import
     drawing: {
         fileName: `Untitled${Date.now()}.svg`,
-        gridDirection: GridDirection.HORIZONTAL,
-        gridThickness: "5",
         // hexEntries[c][r] {hex, hexObject, x, y, c, r};
         hexEntries: [],
-        cols: 34,
-        rows: 20,
     },
     // everything else is just a way to maintain the state of the active
     // session. None of it should need to be exported, or set during import
@@ -100,6 +95,10 @@ const GLOBAL_STATE = {
         GRID: {
             canvasColor: "#c4b9a5",
             gridColor: "#000000",
+            gridDirection: GridDirection.HORIZONTAL,
+            gridThickness: "5",
+            cols: 34,
+            rows: 20,
         },
         COLOR: {
             primaryColor: "#b8895f",
@@ -136,7 +135,7 @@ const MINIMAP = document.getElementById("minimap");
 const MINIMAP_PREVIEW = document.getElementById("minimapPreview");
 const MINIMAP_VIEWBOX = document.getElementById("minimapViewBox");
 // global application controls
-const WELCOME_CONTAINER_DIV = document.getElementById("welcomeContainer");
+const WELCOME_DIV = document.getElementById("welcomeContainer");
 const LAYER_PICKER_BUTTONS = document.getElementsByClassName("layer-picker-btn");
 const NON_LAYER_CONTROL_SET_PICKER_BUTTONS = document.getElementsByClassName("non-layer-picker-btn");
 const TOOL_PICKER_BUTTONS = document.getElementsByClassName("tool-picker-btn");
@@ -303,7 +302,7 @@ function registerEventListeners() {
         stopFreeDragging();
     });
     // global controls
-    WELCOME_CONTAINER_DIV.addEventListener("click", clearWelcomeScreen);
+    WELCOME_DIV.addEventListener("click", clearWelcomeScreen);
     for (const layerPicker of LAYER_PICKER_BUTTONS) {
         layerPicker.addEventListener("click", () => {
             switchToControlSet(layerPicker.dataset["controlset"]);
@@ -331,7 +330,8 @@ function registerEventListeners() {
             return;
         }
         if (target.classList.contains("loaded-file-name")) {
-            loadSvg(localStorage.getItem(`image-${target.dataset["imagename"]}`));
+            const fileName = target.dataset["imagename"];
+            loadSvg(fileName, localStorage.getItem(`image-${fileName}`));
             setFileBrowserView(target.dataset["imagename"]);
         }
         else if (target.classList.contains("delete-file-btn")) {
@@ -631,7 +631,7 @@ function toggleFullscreen() {
     }
 }
 function clearWelcomeScreen() {
-    WELCOME_CONTAINER_DIV.classList.add("hidden");
+    WELCOME_DIV.remove();
     HEXAGGON_DIV.classList.remove("frosted");
 }
 /************************
@@ -796,6 +796,7 @@ function handleHexInteraction(c, r, mouseX, mouseY) {
  * UNDO/REDO *
  *************/
 function addToUndoStack(action) {
+    // this is the cleanest single point of knowing when the map is edited
     updateModifiedTime();
     if (GLOBAL_STATE.undoRedo.pauseUndoStack) {
         return;
@@ -963,13 +964,13 @@ function setGridColor(previousGridColor, color) {
     addToUndoStack({ type: "gridColor", old: previousGridColor, new: color });
 }
 function setGridThickness(thickness) {
-    const previousThickness = GLOBAL_STATE.drawing.gridThickness;
+    const previousThickness = GLOBAL_STATE.layers.GRID.gridThickness;
     for (const hexEntriesRow of GLOBAL_STATE.drawing.hexEntries) {
         for (const hexEntry of hexEntriesRow) {
             hexEntry.hex.setAttribute("stroke-width", `${thickness}px`);
         }
     }
-    GLOBAL_STATE.drawing.gridThickness = thickness;
+    GLOBAL_STATE.layers.GRID.gridThickness = thickness;
     GRID_THICKNESS_SLIDER_DIV.value = thickness;
     addToUndoStack({
         type: "gridThickness",
@@ -978,8 +979,8 @@ function setGridThickness(thickness) {
     });
 }
 function setGridDirection(gridDirection) {
-    GLOBAL_STATE.drawing.gridDirection = gridDirection;
-    SVG.dataset["gridDirection"] = gridDirection;
+    GLOBAL_STATE.layers.GRID.gridDirection = gridDirection;
+    SVG.dataset["griddirection"] = gridDirection;
     for (const b of GRID_DIRECTION_BUTTONS) {
         if (b.dataset["direction"] == gridDirection) {
             b.classList.add("primaryselected");
@@ -1019,12 +1020,12 @@ function floodFill(startC, startR, fn) {
     const oldFillColor = GLOBAL_STATE.drawing.hexEntries[startC][startR].hex.getAttribute("fill");
     while (queue.length > 0) {
         const [c, r] = queue.shift();
-        getHexNeighbors(c, r).forEach((n) => {
+        getHexNeighbors(c, r, SVG.dataset["griddirection"]).forEach((n) => {
             const stringedCoords = `${n[0]},${n[1]}`;
             if (n[0] < 0 ||
                 n[1] < 0 ||
-                n[0] >= GLOBAL_STATE.drawing.cols ||
-                n[1] >= GLOBAL_STATE.drawing.rows)
+                n[0] >= GLOBAL_STATE.layers.GRID.cols ||
+                n[1] >= GLOBAL_STATE.layers.GRID.rows)
                 return;
             if (visited.includes(stringedCoords))
                 return;
@@ -1248,7 +1249,10 @@ function drawBoundary(e) {
     const nextBoundaryPoint = GLOBAL_STATE.drawing.hexEntries[closestCRN.c][closestCRN.r].hex.points[closestCRN.n];
     const lineLength = (lastBoundaryPoint.x - nextBoundaryPoint.x) ** 2 +
         (lastBoundaryPoint.y - nextBoundaryPoint.y) ** 2;
-    if (Math.abs(lineLength - HEX_RADIUS_SQUARED) > 5) {
+    console.log(currentHex, lineLength, closestCRN, lastBoundaryPoint, nextBoundaryPoint);
+    // this looks like a large difference, but keep in mind these are square numbers
+    // and we're at 35^2
+    if (Math.abs(lineLength - HEX_RADIUS_SQUARED) > 75) {
         return;
     }
     const strokeColor = GLOBAL_STATE.mouseState.holdingRightClick
@@ -1371,8 +1375,8 @@ function zoomSvg(scale, mouseX, mouseY) {
 /*************
  * HEX UTILS *
  *************/
-function getHexNeighbors(c, r) {
-    if (GLOBAL_STATE.drawing.gridDirection == GridDirection.VERTICAL) {
+function getHexNeighbors(c, r, gridDirection) {
+    if (gridDirection == GridDirection.VERTICAL) {
         const offset = r % 2 == 0 ? -1 : 1;
         return [
             // left and right
@@ -1457,7 +1461,7 @@ function positionHexes(gridDirection) {
 }
 function drawHex(c, r) {
     const hex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-    hex.setAttribute("stroke-width", `${GLOBAL_STATE.drawing.gridThickness}px`);
+    hex.setAttribute("stroke-width", `${GLOBAL_STATE.layers.GRID.gridThickness}px`);
     hex.dataset["c"] = c.toString();
     hex.dataset["r"] = r.toString();
     hex.classList.add("hex");
@@ -1508,7 +1512,7 @@ function initMiniMap(x, y, width, height) {
 }
 function svgInit() {
     GLOBAL_STATE.undoRedo.pauseUndoStack = true;
-    SVG.dataset["gridDirection"] = GLOBAL_STATE.drawing.gridDirection;
+    SVG.dataset["griddirection"] = GLOBAL_STATE.layers.GRID.gridDirection;
     SVG.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     GLOBAL_STATE.drawing.hexEntries = [];
     Array.prototype.slice.call(document.getElementsByTagName("polygon")).forEach((e) => {
@@ -1517,14 +1521,14 @@ function svgInit() {
         }
         e.remove();
     });
-    for (let c = 0; c < GLOBAL_STATE.drawing.cols; c++) {
+    for (let c = 0; c < GLOBAL_STATE.layers.GRID.cols; c++) {
         const hexColEntries = [];
-        for (let r = 0; r < GLOBAL_STATE.drawing.rows; r++) {
+        for (let r = 0; r < GLOBAL_STATE.layers.GRID.rows; r++) {
             hexColEntries.push(drawHex(c, r));
         }
         GLOBAL_STATE.drawing.hexEntries.push(hexColEntries);
     }
-    positionHexes(GLOBAL_STATE.drawing.gridDirection);
+    positionHexes(SVG.dataset["griddirection"]);
     const bbox = SVG.getBBox();
     const midX = (bbox.width - window.innerWidth) / 2;
     const midY = (bbox.height - window.innerHeight) / 2;
@@ -1535,8 +1539,9 @@ function svgInit() {
     setPrimaryObject(GLOBAL_STATE.layers.OBJECT.primaryObject);
     setSecondaryObject(GLOBAL_STATE.layers.OBJECT.secondaryObject);
     TEXT_FONT_SIZE_DIV.value = DEFAULT_TEXT_FONT_SIZE.toString();
-    GRID_THICKNESS_SLIDER_DIV.value = GLOBAL_STATE.drawing.gridThickness;
+    GRID_THICKNESS_SLIDER_DIV.value = GLOBAL_STATE.layers.GRID.gridThickness;
     setGridDirection(GridDirection.HORIZONTAL);
+    SVG.dataset["lastmodified"] = "-1";
     switchToControlSet(ControlSets.COLOR);
     GLOBAL_STATE.undoRedo.pauseUndoStack = false;
     // smolbean grid for inspection ease
@@ -1546,7 +1551,7 @@ function svgInit() {
     //   }
     // }
 }
-function loadSvg(svgStr) {
+function loadSvg(fileName, svgStr) {
     GLOBAL_STATE.undoRedo.undoStack = [];
     GLOBAL_STATE.undoRedo.redoStack = [];
     GLOBAL_STATE.undoRedo.pauseUndoStack = true;
@@ -1555,8 +1560,10 @@ function loadSvg(svgStr) {
     for (const c of uploadedSvg.getElementsByTagName("style")) {
         uploadedSvg.removeChild(c);
     }
-    setGridDirection(uploadedSvg.dataset["gridDirection"]);
+    setGridDirection(uploadedSvg.dataset["griddirection"] || GridDirection.HORIZONTAL);
     const styleElement = SVG.getElementsByTagName("style")[0];
+    GLOBAL_STATE.drawing.fileName = fileName;
+    FILE_NAME_DIV.textContent = fileName;
     SVG.innerHTML = uploadedSvg.innerHTML;
     SVG.appendChild(styleElement);
     // extract hex metadata
@@ -1576,12 +1583,12 @@ function loadSvg(svgStr) {
         hexesMap.get(c).set(r, { hex, minihex: null, hexObject: null, x, y, c, r });
     }
     GLOBAL_STATE.drawing.hexEntries = [];
-    GLOBAL_STATE.drawing.cols = hexesMap.size;
-    GLOBAL_STATE.drawing.rows = hexesMap.get(0).size;
+    GLOBAL_STATE.layers.GRID.cols = hexesMap.size;
+    GLOBAL_STATE.layers.GRID.rows = hexesMap.get(0).size;
     setGridThickness(hexesMap.get(0).get(0).hex.getAttribute("stroke-width").slice(0, -2));
-    for (let c = 0; c < GLOBAL_STATE.drawing.cols; c++) {
+    for (let c = 0; c < GLOBAL_STATE.layers.GRID.cols; c++) {
         const hexColEntries = [];
-        for (let r = 0; r < GLOBAL_STATE.drawing.rows; r++) {
+        for (let r = 0; r < GLOBAL_STATE.layers.GRID.rows; r++) {
             hexColEntries.push(hexesMap.get(c).get(r));
         }
         GLOBAL_STATE.drawing.hexEntries.push(hexColEntries);
@@ -1618,7 +1625,7 @@ function loadSvg(svgStr) {
     GLOBAL_STATE.undoRedo.pauseUndoStack = false;
 }
 function importSvg(fileName, svgStr) {
-    loadSvg(svgStr);
+    loadSvg(fileName, svgStr);
     saveToLocalStorage(fileName, svgStr, true);
     setFileBrowserView(fileName);
 }
@@ -1666,6 +1673,41 @@ function populateFileBrowser() {
         }
     });
 }
+function svgToPng(svgString) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+    };
+    img.classList.add("loaded-file-preview");
+    img.src = url;
+    return img;
+}
+function populateWelcomeScreenFiles() {
+    Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith("image-")) {
+            const imageName = k.slice(6);
+            const nameDiv = document.createElement("div");
+            nameDiv.textContent = imageName;
+            nameDiv.dataset["imagename"] = imageName;
+            nameDiv.classList.add("loaded-file-name");
+            const div = document.createElement("div");
+            div.appendChild(nameDiv);
+            div.append(svgToPng(localStorage.getItem(k)));
+            div.classList.add("flex-column", "loaded-file-entry", "gappy");
+            document.getElementById("welcomeContainerFileBrowser").appendChild(div);
+            div.addEventListener("click", () => {
+                loadSvg(imageName, localStorage.getItem(k));
+            });
+        }
+    });
+}
 /********
  * MAIN *
  ********/
@@ -1675,6 +1717,10 @@ setFileBrowserView(GLOBAL_STATE.drawing.fileName);
 svgInit();
 setInterval(() => {
     if (parseInt(SVG.dataset["lastmodified"]) > 0) {
-        saveToLocalStorage(FILE_NAME_DIV.textContent, SVG.outerHTML, false);
+        const clonedSvg = SVG.cloneNode(true);
+        const bbox = SVG.getBBox();
+        clonedSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        saveToLocalStorage(FILE_NAME_DIV.textContent, clonedSvg.outerHTML, false);
     }
 }, 5000);
+populateWelcomeScreenFiles();
