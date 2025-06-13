@@ -116,8 +116,13 @@ body {
 .btn > label {
     cursor: pointer;
 }
+
 .hexagon-btn > svg {
     height: 21px;
+}
+
+.delete-file-btn {
+    cursor: pointer;
 }
 
 .toolbar {

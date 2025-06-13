@@ -1012,6 +1012,7 @@ function handleHexInteraction(c: number, r: number, mouseX: number, mouseY: numb
  * UNDO/REDO *
  *************/
 function addToUndoStack(action: Action) {
+  updateModifiedTime();
   if (GLOBAL_STATE.undoRedo.pauseUndoStack) {
     return;
   }
@@ -1812,7 +1813,26 @@ function initMiniMap(x: number, y: number, width: number, height: number) {
       MINIMAP_PREVIEW.appendChild(minihex);
     }
   }
+
+  for (const boundary of SVG.getElementsByClassName("boundary")) {
+    if (!(boundary instanceof SVGLineElement)) {
+      logUnexpectedError("non-line boundary element");
+      return;
+    }
+    const miniboundary = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    miniboundary.setAttribute("x1", boundary.getAttribute("x1"));
+    miniboundary.setAttribute("y1", boundary.getAttribute("y1"));
+    miniboundary.setAttribute("x2", boundary.getAttribute("x2"));
+    miniboundary.setAttribute("y2", boundary.getAttribute("y2"));
+    miniboundary.dataset["fromcrn"] = boundary.dataset["fromcrn"];
+    miniboundary.dataset["tocrn"] = boundary.dataset["fromcrn"];
+    miniboundary.setAttribute("stroke", boundary.getAttribute("stroke"));
+    miniboundary.classList.add("miniboundary");
+    MINIMAP_PREVIEW.appendChild(miniboundary);
+  }
+
   const minibbox = MINIMAP_PREVIEW.getBBox();
+
   MINIMAP.setAttribute(
     "viewBox",
     `${minibbox.x} ${minibbox.y} ${minibbox.width} ${minibbox.height}`,
@@ -1885,7 +1905,7 @@ function loadSvg(svgStr: string) {
 
   // extract hex metadata
   const hexesMap = new Map<number, Map<number, HexEntry>>();
-  SVG.querySelectorAll(".hex").forEach((hex) => {
+  for (const hex of SVG.getElementsByClassName("hex")) {
     if (!(hex instanceof SVGPolygonElement)) {
       logUnexpectedError("hex not polygon in uploaded svg");
       return;
@@ -1898,11 +1918,11 @@ function loadSvg(svgStr: string) {
       hexesMap.set(c, new Map());
     }
     hexesMap.get(c).set(r, { hex, minihex: null, hexObject: null, x, y, c, r });
-  });
+  }
 
   GLOBAL_STATE.drawing.hexEntries = [];
-  GLOBAL_STATE.drawing.cols = Object.keys(hexesMap).length;
-  GLOBAL_STATE.drawing.rows = Object.keys(hexesMap.get(0)).length;
+  GLOBAL_STATE.drawing.cols = hexesMap.size;
+  GLOBAL_STATE.drawing.rows = hexesMap.get(0).size;
   setGridThickness(hexesMap.get(0).get(0).hex.getAttribute("stroke-width").slice(0, -2));
 
   for (let c = 0; c < GLOBAL_STATE.drawing.cols; c++) {
@@ -1913,7 +1933,7 @@ function loadSvg(svgStr: string) {
     GLOBAL_STATE.drawing.hexEntries.push(hexColEntries);
   }
 
-  SVG.querySelectorAll(".hex-object").forEach((hexObject) => {
+  for (const hexObject of SVG.getElementsByClassName("hex-object")) {
     if (!(hexObject instanceof SVGTextElement)) {
       logUnexpectedError("hex object not text in uploaded svg");
       return;
@@ -1926,7 +1946,7 @@ function loadSvg(svgStr: string) {
       return;
     }
     hexEntry.hexObject = hexObject;
-  });
+  }
 
   const bbox = SVG.getBBox();
   const midX = (bbox.width - window.innerWidth) / 2;
@@ -1957,6 +1977,10 @@ function importSvg(fileName: string, svgStr: string) {
 /*************************************
  * STATE PERSISTENCE/FILE MANAGEMENT *
  *************************************/
+function updateModifiedTime() {
+  SVG.dataset["lastmodified"] = Date.now().toString();
+}
+
 function saveNow() {
   saveToLocalStorage(GLOBAL_STATE.drawing.fileName, SVG.outerHTML);
 }
@@ -2008,3 +2032,8 @@ registerEventListeners();
 registerDropUploadEventHandlers();
 setFileBrowserView(GLOBAL_STATE.drawing.fileName);
 svgInit();
+setInterval(() => {
+  if (parseInt(SVG.dataset["lastmodified"]) > 0) {
+    saveToLocalStorage(FILE_NAME_DIV.textContent, SVG.outerHTML, false);
+  }
+}, 5000);
