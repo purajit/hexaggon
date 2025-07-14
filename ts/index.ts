@@ -1,5 +1,5 @@
 /*************
- * constants *
+ * CONSTANTS *
  *************/
 const HEX_RADIUS = 35;
 const HEX_RADIUS_SQUARED = HEX_RADIUS ** 2; // to avoid sqrt in distance calculations
@@ -31,7 +31,6 @@ const Tools = {
 const ControlPanels = {
   COLOR: "COLOR",
   OBJECT: "OBJECT",
-  PATHTIPSYMBOL: "PATHTIPSYMBOL",
   TEXT: "TEXT",
   GRID: "GRID",
   SETTINGS: "SETTINGS",
@@ -55,16 +54,16 @@ const LAYER_TOOL_COMPATIBILITY = {
     Tools.ZOOM,
   ],
   [ControlSets.OBJECT]: [Tools.BRUSH, Tools.LINE, Tools.ERASER, Tools.EYEDROPPER, Tools.ZOOM],
-  [ControlSets.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
+  [ControlSets.PATH]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
   [ControlSets.BOUNDARY]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
-  [ControlSets.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.SELECT, Tools.ZOOM],
+  [ControlSets.TEXT]: [Tools.BRUSH, Tools.ERASER, Tools.ZOOM],
 };
 
 const CONTROL_PANEL_COMPATIBILITY = {
   [ControlSets.GRID]: [ControlPanels.GRID, ControlPanels.MINIMAP],
   [ControlSets.COLOR]: [ControlPanels.COLOR, ControlPanels.MINIMAP],
   [ControlSets.OBJECT]: [ControlPanels.OBJECT, ControlPanels.MINIMAP],
-  [ControlSets.PATH]: [ControlPanels.COLOR, ControlPanels.PATHTIPSYMBOL, ControlPanels.MINIMAP],
+  [ControlSets.PATH]: [ControlPanels.COLOR, ControlPanels.MINIMAP],
   [ControlSets.BOUNDARY]: [ControlPanels.COLOR, ControlPanels.MINIMAP],
   [ControlSets.TEXT]: [ControlPanels.COLOR, ControlPanels.TEXT, ControlPanels.MINIMAP],
   [ControlSets.SETTINGS]: [ControlPanels.SETTINGS, ControlPanels.MINIMAP],
@@ -98,23 +97,23 @@ interface HexEntry {
 interface Action {
   type: string;
   action?: string;
-  old?: string;
-  new?: string;
-  target?: {
-    pt?: DOMPoint;
+  target: {
+    old?: string;
+    new?: string;
     // color/object action
     cr?: CR;
+    floodTargets?: string[];
     // boundary action
-    color?: string;
     fromCRN?: string;
     toCRN?: string;
+    color?: string;
     // path action
     fromCR?: CR;
     toCR?: CR;
-    floodTargets?: string[];
     lineColor?: string;
     highlightColor?: string;
     // text action
+    pt?: DOMPoint;
     textDecoration?: string;
     fontStyle?: string;
     strokeWidth?: string;
@@ -813,13 +812,13 @@ function setSecondaryObject(objectText: string) {
 }
 
 function setPrimaryColor(color: string) {
-  // @ts-expect-error: both layer and color access are problematic. Find a better way.
+  // ts-expect-error: both layer and color access are problematic. Find a better way.
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].primaryColor = color;
   CHOSEN_PRIMARY_COLOR_DIV.setAttribute("fill", color);
 }
 
 function setSecondaryColor(color: string) {
-  // @ts-expect-error: both layer and color access are problematic. Find a better way.
+  // ts-expect-error: both layer and color access are problematic. Find a better way.
   GLOBAL_STATE.layers[GLOBAL_STATE.currentLayer].secondaryColor = color;
   CHOSEN_SECONDARY_COLOR_DIV.setAttribute("fill", color);
 }
@@ -896,9 +895,9 @@ function switchToControlSet(controlSet: string, isLayer = true) {
     document.querySelectorAll(`.eraseable-${controlSet}`).forEach((e) => {
       e.classList.remove("no-pointer-events");
     });
-    // @ts-expect-error: both layer and color access are problematic. Find a better way.
+    // ts-expect-error: both layer and color access are problematic. Find a better way.
     setPrimaryColor(GLOBAL_STATE.layers[controlSet].primaryColor);
-    // @ts-expect-error: both layer and color access are problematic. Find a better way.
+    // ts-expect-error: both layer and color access are problematic. Find a better way.
     setSecondaryColor(GLOBAL_STATE.layers[controlSet].secondaryColor);
   }
 }
@@ -1030,31 +1029,31 @@ function undoLastAction() {
     switch (lastAction.type) {
       // {type: "canvasColor", old, new}
       case "canvasColor":
-        setCanvasColor(lastAction.new, lastAction.old);
+        setCanvasColor(lastAction.target.new, lastAction.target.old);
         break;
       // {type: "gridColor", old, new}
       case "gridColor":
-        setGridColor(lastAction.new, lastAction.old);
+        setGridColor(lastAction.target.new, lastAction.target.old);
         break;
       // {type: "color", old, new, target: [c, r]}
       case "gridThickness":
-        setGridThickness(lastAction.old);
+        setGridThickness(lastAction.target.old);
         break;
       case "color":
-        colorHex(lastAction.target.cr.c, lastAction.target.cr.r, lastAction.old);
+        colorHex(lastAction.target.cr.c, lastAction.target.cr.r, lastAction.target.old);
         break;
       // {type: floodFill, old, target: {floodTargets: ["c1,r2", ...]}}
       case "floodFill": {
         const floodTargets = lastAction.target.floodTargets;
         for (const floodTarget of floodTargets) {
           const cr = floodTarget.split(",").map(Number);
-          colorHex(cr[0], cr[1], lastAction.old, true);
+          colorHex(cr[0], cr[1], lastAction.target.old, true);
         }
         break;
       }
       // {type: "object", old, new, target: [c, r]}
       case "object":
-        placeObjectOnHex(lastAction.target.cr.c, lastAction.target.cr.r, lastAction.old);
+        placeObjectOnHex(lastAction.target.cr.c, lastAction.target.cr.r, lastAction.target.old);
         break;
       // {type: "boundary", target: {fromCRN, toCRN, color}}
       case "boundary": {
@@ -1186,8 +1185,7 @@ function setCanvasColor(previousCanvasColor: string | null, color: string) {
   SVG.dataset["canvasColor"] = color;
   addToUndoStack({
     type: "canvasColor",
-    old: previousCanvasColor,
-    new: color,
+    target: { old: previousCanvasColor, new: color },
   });
 }
 
@@ -1203,7 +1201,7 @@ function setGridColor(previousGridColor: string | null, color: string) {
   }
   GLOBAL_STATE.layers.GRID.gridColor = color;
   SVG.dataset["gridColor"] = color;
-  addToUndoStack({ type: "gridColor", old: previousGridColor, new: color });
+  addToUndoStack({ type: "gridColor", target: { old: previousGridColor, new: color } });
 }
 
 function setGridThickness(thickness: string) {
@@ -1217,8 +1215,7 @@ function setGridThickness(thickness: string) {
   GRID_THICKNESS_SLIDER_DIV.value = thickness;
   addToUndoStack({
     type: "gridThickness",
-    old: previousThickness,
-    new: thickness,
+    target: { old: previousThickness, new: thickness },
   });
 }
 
@@ -1252,9 +1249,7 @@ function colorHex(c: number, r: number, fillColor: string | null = null, isFlood
   if (!isFloodFill) {
     addToUndoStack({
       type: "color",
-      old: oldFillColor,
-      new: fillColor,
-      target: { cr: { c, r } },
+      target: { cr: { c, r }, old: oldFillColor, new: fillColor },
     });
   }
 }
@@ -1293,8 +1288,7 @@ function floodFill(
   });
   addToUndoStack({
     type: "floodFill",
-    old: oldFillColor,
-    target: { floodTargets: visited },
+    target: { floodTargets: visited, old: oldFillColor },
   });
 }
 
@@ -1338,9 +1332,7 @@ function placeObjectOnHex(c: number, r: number, objectToUse: string | null = nul
   }
   addToUndoStack({
     type: "object",
-    old: oldObjectText,
-    new: objectToUse,
-    target: { cr: { c, r } },
+    target: { cr: { c, r }, old: oldObjectText, new: objectToUse },
   });
 }
 
